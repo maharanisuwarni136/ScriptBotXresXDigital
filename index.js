@@ -120,6 +120,58 @@ setInterval(() => {
 }, 60 * 1000)
 
 // ============================================================================
+// [HEALTH-CHECK] Deteksi "silent death" — koneksi diam-diam mati tanpa event 'close'
+// Berbeda dari watchdog lama (yang PAKSA putus koneksi sehat = trigger ban).
+// Health-check ini HANYA reconnect jika koneksi BENAR-BENAR sudah mati:
+//   - WebSocket readyState bukan OPEN
+//   - ATAU sudah tidak ada aktivitas apapun selama 10 menit padahal _connAlive=true
+//     (artinya keepAlive ping juga gagal — koneksi sudah dead)
+// Interval: cek setiap 5 menit. Tidak mengirim data apapun ke WA server.
+// ============================================================================
+setInterval(() => {
+	// Jangan ganggu jika sedang connecting/reconnecting
+	if (_isConnecting) return
+	if (!global.botReady) return
+	if (!global._connAlive) return
+
+	const conn = global._nxlConn
+	if (!conn) return
+
+	// Cek 1: WebSocket state — jika bukan OPEN (1), koneksi sudah mati
+	const ws = conn.ws
+	if (ws && typeof ws.readyState === 'number' && ws.readyState !== 1) {
+		console.log(chalk.yellow(`[HEALTH-CHECK] WebSocket state = ${ws.readyState} (bukan OPEN). Trigger reconnect.`))
+		global._connAlive = false
+		try { if (ws.close) ws.close() } catch {}
+		scheduleReconnect('Health-check: WebSocket not OPEN')
+		return
+	}
+
+	// Cek 2: Jika ws tidak tersedia atau tidak punya readyState, cek via lastActivity
+	// Jika _connAlive=true tapi tidak ada aktivitas >10 menit, kemungkinan koneksi zombie
+	const idleMs = Date.now() - _lastActivityAt
+	const ZOMBIE_THRESHOLD = 10 * 60 * 1000 // 10 menit
+
+	if (idleMs > ZOMBIE_THRESHOLD) {
+		// Verifikasi: coba akses user.id — jika socket benar-benar mati, ini akan undefined
+		try {
+			const testId = conn.user?.id
+			if (!testId) {
+				console.log(chalk.yellow(`[HEALTH-CHECK] conn.user.id kosong setelah idle ${Math.round(idleMs/60000)} menit. Trigger reconnect.`))
+				global._connAlive = false
+				scheduleReconnect('Health-check: zombie connection (no user.id)')
+				return
+			}
+		} catch {
+			console.log(chalk.yellow(`[HEALTH-CHECK] Error akses conn.user — koneksi mati. Trigger reconnect.`))
+			global._connAlive = false
+			scheduleReconnect('Health-check: zombie connection (error)')
+			return
+		}
+	}
+}, 5 * 60 * 1000) // cek setiap 5 menit
+
+// ============================================================================
 // [FIX14 INCREMENTAL CACHE] — Port dari Fix14 asli.
 // JPM membaca global.allGroupsCache secara live (termasuk grup baru yang masuk
 // saat broadcast sedang berjalan). Cache di-refresh oleh prefetchAllGroups().
