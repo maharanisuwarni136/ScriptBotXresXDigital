@@ -844,13 +844,9 @@ if (m.isGroup) {
 
                 if (!isAdmin && !isCreator) {
                     if (isBotAdmins) {
-
-                        await NXL.sendMessage(m.chat, {
-                            text: `📵 *ANTI STATUS GRUP AKTIF*\n\n@${m.sender.split('@')[0]} terdeteksi mengirimkan Promosi Status Grup! Pesan telah dihapus oleh bot karena dilarang.`,
-                            mentions: [m.sender]
-                        }, { quoted: m })
-
-
+                        // [FIX BAN] Hanya delete pesan, TANPA kirim warning message
+                        // Mengurangi API call dari 2 (sendMessage + delete) ke 1 (delete saja)
+                        // Ini mengurangi fingerprint bot yang reaktif ke setiap status grup
                         try {
                             await NXL.sendMessage(m.chat, {
                                 delete: {
@@ -996,6 +992,13 @@ if (!isCmd && global.autoJoinGc && budy && budy.includes('chat.whatsapp.com/')) 
 }
 
 if (!isCmd && hasContent && !m.key.fromMe && global.db?.users?.[m.sender]?.NXL !== false) {
+  // [FIX BAN] Skip AI processing jika groqKey belum di-set (placeholder)
+  // Tanpa ini, setiap pesan non-command akan trigger error 401 dari Groq
+  // lalu bot mengirim "⚠️ Terjadi error..." ke SETIAP user = spam outbound
+  const _gKey = global.groqKey || ''
+  if (!_gKey || _gKey === 'YOUR_GROQ_API_KEY' || _gKey.length < 20) {
+    // groqKey belum valid, skip AI — biarkan pesan lewat tanpa respon AI
+  } else {
   try {
     const GROQ_KEY = global.groqKey
 
@@ -1259,6 +1262,7 @@ if (!isCmd && hasContent && !m.key.fromMe && global.db?.users?.[m.sender]?.NXL !
     console.log('[NXLAI ERROR]', err?.response?.data || err.message)
     m.reply('⚠️ Terjadi error saat memproses pesan kamu.')
   }
+  } // tutup else (groqKey valid)
   return
 }
 
@@ -1401,18 +1405,9 @@ if (m.isGroup && !m.key.fromMe && antibotList.includes(m.chat)) {
         try { await NXL.sendMessage(m.chat, { delete: m.key }) } catch {}
 
         if (actionType === 'kick') {
-          // [PATCH D] Verifikasi status admin bot dgn metadata SEGAR sebelum kick,
-          // supaya keputusan destruktif tidak memakai cache basi (root cause F4-02).
-          // Hanya berjalan di jalur kick (jarang) sehingga tidak membanjiri groupMetadata.
-          let _botAdminFresh = isBotAdmins
-          try {
-            const _fm = await NXL.groupMetadata(m.chat)
-            const _botJidFresh = NXL.user.id.split(':')[0] + '@s.whatsapp.net'
-            _botAdminFresh = (_fm?.participants || []).some(p =>
-              ((p.id && areJidsSameUser(p.id, _botJidFresh)) || (p.lid && p.lid === p.id)) && p.admin
-            )
-          } catch {}
-          if (_botAdminFresh) {
+          // [FIX BAN] Gunakan isBotAdmins yang sudah dikomputasi dari cache
+          // BUKAN fresh groupMetadata (menghindari extra API call per deteksi)
+          if (isBotAdmins) {
             await sleep(2000)
             try { await NXL.groupParticipantsUpdate(m.chat, [m.sender], 'remove') } catch {}
           } else {
@@ -1701,6 +1696,28 @@ case "gemini": {
   reply(`${hasil}`)
   break
 }
+case 'deepseek': {
+  if (!text) return reply(`contoh .${command} halo`)
+  try {
+    const _gKey = global.groqKey || ''
+    if (!_gKey || _gKey === 'YOUR_GROQ_API_KEY' || _gKey.length < 20) {
+      return reply('❌ API Key belum di-set. Atur groqKey di settings.js')
+    }
+    await m.reply('[ PROCESS ] Menghubungkan ke DeepSeek...')
+    const res = await axios.post(`${global.apiGroq || 'https://api.groq.com'}/openai/v1/chat/completions`, {
+      model: 'deepseek-r1-distill-llama-70b',
+      messages: [
+        { role: 'system', content: 'Kamu adalah DeepSeek AI assistant yang membantu user dengan bahasa Indonesia.' },
+        { role: 'user', content: text }
+      ]
+    }, { headers: { Authorization: `Bearer ${_gKey}` } })
+    const output = res.data?.choices?.[0]?.message?.content || 'Tidak ada jawaban.'
+    reply(`*DEEPSEEK AI*\n\n${output}`)
+  } catch (err) {
+    reply(`❌ Error: ${err?.response?.data?.error?.message || err.message}`)
+  }
+}
+break
 case 'gpt':
 case 'ai': {
   if (!text) return m.reply(`*PENGGUNAAN SALAH*\n\nFormat: .${command} [pertanyaan]\nContoh: .${command} Siapa pencipta Linux?`)

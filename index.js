@@ -104,6 +104,9 @@ function markActivity() {
 	_lastActivityAt = Date.now()
 }
 
+// [FIX BAN] Watchdog idle reconnect DIHAPUS (ikuti V1.5 yang terbukti aman).
+// Reconnect paksa setiap 30 menit idle = fingerprint bot yang jelas bagi WhatsApp.
+// Hanya pertahankan watchdog untuk stuck connecting state (bukan idle).
 setInterval(() => {
 	const now = Date.now()
 
@@ -113,17 +116,6 @@ setInterval(() => {
 		_connectingSince = null
 		scheduleReconnect('Watchdog: stuck connecting state')
 		return
-	}
-
-	const IDLE_LIMIT = (global.WATCHDOG_IDLE_MS || 30 * 60 * 1000)
-	if (!_isConnecting && global.botReady && (now - _lastActivityAt) > IDLE_LIMIT) {
-		console.log(chalk.yellow(`[WATCHDOG] Tidak ada aktivitas selama ${Math.round((now - _lastActivityAt)/60000)} menit, paksa reconnect untuk jaga-jaga.`))
-		markActivity()
-		try {
-			if (global._nxlConn?.ws?.close) global._nxlConn.ws.close()
-			else if (global._nxlConn?.end) global._nxlConn.end(new Error('watchdog idle reconnect'))
-		} catch {}
-		scheduleReconnect('Watchdog: idle timeout')
 	}
 }, 60 * 1000)
 
@@ -701,6 +693,7 @@ NXL.ev.on('call', async (calls) => {
     if (!global.anticallWarnings) global.anticallWarnings = {}
 
     const anticallgcList = global.anticallgcList
+    if (!anticallgcList.length) return
 
     const botJid = NXL.decodeJid ? NXL.decodeJid(NXL.user.id) : (NXL.user.id.split(':')[0] + '@s.whatsapp.net')
     const ownerNums = (global.cache?.owner || []).map(v => v.replace(/[^0-9]/g, '') + '@s.whatsapp.net')
@@ -711,35 +704,50 @@ NXL.ev.on('call', async (calls) => {
       if (!call.isGroup) continue
       if (call.status && !['offer', 'ringing'].includes(call.status)) continue
 
+      // Reject call tanpa delay
       try { await NXL.rejectCall(call.id, callerId) } catch {}
 
       if (typeof areJidsSameUser === 'function' ? areJidsSameUser(callerId, botJid) : callerId === botJid) continue
       if (ownerNums.includes(callerId)) continue
 
+      // [FIX BAN] Gunakan groupCache yang sudah ada (dari prefetch/per-pesan cache)
+      // BUKAN loop groupMetadata per grup (menghindari burst API call yang trigger ban)
       let groupId = null
       let groupMeta = null
 
+      if (!global.groupCache) global.groupCache = {}
       for (const gid of anticallgcList) {
-        try {
-          const meta = await NXL.groupMetadata(gid).catch(() => null)
+        const cached = global.groupCache[gid]
+        if (!cached) continue
+        const inGroup = cached.participants?.some(p =>
+          (typeof areJidsSameUser === 'function' ? areJidsSameUser(p.id, callerId) : p.id === callerId)
+        )
+        if (inGroup) {
+          groupId = gid
+          groupMeta = cached
+          break
+        }
+      }
 
-          const inGroup = meta?.participants?.some(p =>
+      // Jika tidak ditemukan di cache, coba allGroupsCache sebagai fallback
+      if (!groupId && global.allGroupsCache) {
+        for (const gid of anticallgcList) {
+          const cached = global.allGroupsCache[gid]
+          if (!cached) continue
+          const inGroup = cached.participants?.some(p =>
             (typeof areJidsSameUser === 'function' ? areJidsSameUser(p.id, callerId) : p.id === callerId)
           )
           if (inGroup) {
             groupId = gid
-            groupMeta = meta
+            groupMeta = cached
             break
           }
-        } catch {}
+        }
       }
 
       if (!groupId || !groupMeta) continue
 
-      try { groupMeta = await NXL.groupMetadata(groupId).catch(() => groupMeta) } catch {}
-
       const participants = groupMeta?.participants || []
-
       const groupAdmins = participants.filter(p => p.admin).map(p => p.id) || []
       const isAdmin = groupAdmins.some(adminId =>
         typeof areJidsSameUser === 'function' ? areJidsSameUser(adminId, callerId) : adminId === callerId
@@ -762,7 +770,6 @@ NXL.ev.on('call', async (calls) => {
       const warnCount = global.anticallWarnings[warnKey]
 
       if (warnCount === 1) {
-
         await NXL.sendMessage(groupId, {
           text:
             `📵 *ANTI CALL GRUP AKTIF*\n\n` +
@@ -774,7 +781,6 @@ NXL.ev.on('call', async (calls) => {
           mentions: [callerId]
         })
       } else if (warnCount >= 2) {
-
         await NXL.sendMessage(groupId, {
           text:
             `🚨 *KICK OTOMATIS*\n\n` +
