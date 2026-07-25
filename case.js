@@ -966,11 +966,7 @@ if (_msgId && !_isAppend) {
   }
 }
 
-// [PERF-FIX] Log pesan HANYA setelah dedup lolos — memastikan setiap pesan
-// hanya mencetak log SATU kali di panel Pterodactyl (fix double/triple log).
-if (m.message) {
-console.log(chalk.black(chalk.bgWhite('[ PESAN ]')), chalk.black(chalk.bgGreen(new Date().toLocaleTimeString())), chalk.black(chalk.bgBlue(budy || m.mtype || '')) + '\n' + chalk.magenta('=> Dari'), chalk.green(pushname || 'Unknown'), chalk.yellow(m.sender || '') + '\n' + chalk.blueBright('=> Di'), chalk.green(m.isGroup ? (pushname || 'Group Chat') : 'Private Chat') + ' ' + chalk.cyan(from || ''));
-}
+// Log sudah dipindahkan ke message.js (support ALL chat termasuk mode SELF & grup)
 
 if (!isCmd && global.autoJoinGc && budy && budy.includes('chat.whatsapp.com/')) {
   const linksFound = budy.split(/\s+|\n/).filter(l => l.includes('chat.whatsapp.com/'))
