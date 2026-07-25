@@ -726,7 +726,7 @@ remoteJid: "status@broadcast"
 },
 message: {
 listResponseMessage: {
-title: `*${ownername} 1.0*`
+title: `*${ownername} ${global.versibot}*`
 }
 }
 }
@@ -739,7 +739,7 @@ remoteJid: "status@broadcast"
 },
 message: {
 listResponseMessage: {
-title: `NXL BOT REV`
+title: `${global.ownername} ${global.versibot}`
 }
 }
 }
@@ -1867,12 +1867,12 @@ case "menu": {
     },
     message: {
       extendedTextMessage: {
-        text: `*${ownername} 2.0*`,
+        text: `*${ownername} ${global.versibot}*`,
         contextInfo: {
           externalAdReply: {
             title: "${ownername} Developer",
             body: "Tap untuk buka link",
-            sourceUrl: `${global.waMe}/6287728163189`,
+            sourceUrl: `${global.waMe}/${owner[0]}`,
             mediaType: 1,
             renderLargerThumbnail: true,
             showAdAttribution: true
@@ -2051,12 +2051,12 @@ case "allmenu": {
     },
     message: {
       extendedTextMessage: {
-        text: `*${ownername} 2.0*`,
+        text: `*${ownername} ${global.versibot}*`,
         contextInfo: {
           externalAdReply: {
             title: "${ownername} Developer",
             body: "Tap untuk buka link",
-            sourceUrl: `${global.waMe}/6287728163189`,
+            sourceUrl: `${global.waMe}/${owner[0]}`,
             mediaType: 1,
             renderLargerThumbnail: true,
             showAdAttribution: true
@@ -4596,7 +4596,7 @@ case 'mix': {
     if (typeof NXL.sendImageAsSticker === 'function') {
       await NXL.sendImageAsSticker(m.chat, resultBuffer, m, {
         packname: "Emoji Mix",
-        author: "PT SONTOLOYO"
+        author: global.wm
       })
     } else {
       await NXL.sendMessage(m.chat, { 
@@ -5360,7 +5360,7 @@ case 'nobg': {
 
     await NXL.sendMessage(m.chat, { 
       image: resultBuffer, 
-      caption: `*IMAGE PROCESSED*\n\n* MODE : ${mode.toUpperCase()}\n\n_System watermark: PT SONTOLOYO_` 
+      caption: `*IMAGE PROCESSED*\n\n* MODE : ${mode.toUpperCase()}\n\n_System watermark: ${global.wm}_` 
     }, { quoted: m })
 
   } catch (e) {
@@ -6974,7 +6974,7 @@ case "autopromo": {
               showAdAttribution: true,
               title: "WhatsApp Business",
               body: "XRESX DIGITAL STORE 2.0",
-              sourceUrl: `${global.waMe}/6287728163189`,
+              sourceUrl: `${global.waMe}/${owner[0]}`,
               mediaType: 1,
               renderLargerThumbnail: false
             }
@@ -6988,7 +6988,7 @@ case "autopromo": {
               showAdAttribution: true,
               title: "WhatsApp Business",
               body: "XRESX DIGITAL STORE 2.0",
-              sourceUrl: `${global.waMe}/6287728163189`,
+              sourceUrl: `${global.waMe}/${owner[0]}`,
               mediaType: 1,
               renderLargerThumbnail: false
             }
@@ -8058,7 +8058,7 @@ break
 
 case "teslink":
   await NXL.sendMessage(m.chat, {
-    text: `${global.waMe}/6287728163189`,
+    text: `${global.waMe}/${owner[0]}`,
     linkPreview: null
   }, { quoted: m })
 break
@@ -8737,7 +8737,7 @@ case 'done6': case 'done7': case 'done8': case 'done9': case 'done10': {
         `Terima kasih telah berbelanja di *${global.ownername}* 🙏\n` +
         `Jika ada kendala, silakan hubungi admin.` +
         (linkSection ? `\n${linkSection}` : '') +
-        `\n\n_PT SONTOLOYO_`
+        `\n\n_${global.wm}_`
       await NXL.sendMessage(customerJid, { text: thankMsg })
     } catch (custErr) {
       console.log('[DONE] Gagal kirim ucapan ke customer:', custErr.message)
@@ -9252,7 +9252,7 @@ case 'searchcode': {
       txt += `------------------------------------\n\n`
     })
 
-    txt += `_PT SONTOLOYO_`
+    txt += `_${global.wm}_`
 
     await m.reply(txt)
 

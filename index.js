@@ -606,7 +606,7 @@ await NXL.relayMessage(id, {
       "description": `Selamat datang @${n.split('@')[0]}`,
       "productImageCount": 1
     },
-    "businessOwnerJid": "6283197813991@s.whatsapp.net",
+    "businessOwnerJid": NXL.decodeJid(NXL.user.id),
     "contextInfo": {
       mentionedJid: [n]
     }
@@ -629,7 +629,7 @@ await NXL.relayMessage(id, {
       "description": `Selamat tinggal @${n.split("@")[0]}`,
       "productImageCount": 1
     },
-    "businessOwnerJid": "6283197813991@s.whatsapp.net",
+    "businessOwnerJid": NXL.decodeJid(NXL.user.id),
     "contextInfo": {
       mentionedJid: [n]
     }
@@ -652,7 +652,7 @@ await NXL.relayMessage(id, {
       "description": `Promote member @${n.split("@")[0]}`,
       "productImageCount": 1
     },
-    "businessOwnerJid": "6283197813991@s.whatsapp.net",
+    "businessOwnerJid": NXL.decodeJid(NXL.user.id),
     "contextInfo": {
       mentionedJid: [n]
     }
@@ -675,7 +675,7 @@ await NXL.relayMessage(id, {
       "description": `Demote member @${n.split("@")[0]}`,
       "productImageCount": 1
     },
-    "businessOwnerJid": "6283197813991@s.whatsapp.net",
+    "businessOwnerJid": NXL.decodeJid(NXL.user.id),
     "contextInfo": {
       mentionedJid: [n]
     }
