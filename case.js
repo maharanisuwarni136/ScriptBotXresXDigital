@@ -419,7 +419,9 @@ const { LoadDataBase } = require('./lib/source/message')
 
 module.exports = NXL = async (NXL, m, chatUpdate, store) => {
 	try {
-const from = m.key.remoteJid
+// [FIX LID] Gunakan m.chat yang sudah di-resolve oleh Serialize (bukan m.key.remoteJid mentah)
+// m.chat sudah pasti @s.whatsapp.net atau @g.us, tidak pernah @lid
+const from = m.chat
 await LoadDataBase(NXL, m)
 if (global.moduleType == undefined) global.moduleType = 0
 if (global.moduleType === 0) {
@@ -435,7 +437,8 @@ const isCmd = body.startsWith(prefix)
 const command = isCmd ? body.slice(prefix.length).trim().split(' ').shift().toLowerCase() : '';
 const args = body.trim().split(/ +/).slice(1)
 const text = q = args.join(" ")
-const sender = m.key.fromMe ? (NXL.user.id.split(':')[0]+'@s.whatsapp.net' || NXL.user.id) : (m.key.participant || m.key.remoteJid)
+// [FIX LID] Gunakan m.sender yang sudah di-resolve, fallback ke from (juga sudah resolved)
+const sender = m.sender || (m.key.fromMe ? (NXL.user.id.split(':')[0]+'@s.whatsapp.net') : from)
 const senderNumber = sender.split('@')[0]
 const typ = global.cache.owner
 const kontributor = global.cache.owner
@@ -675,9 +678,11 @@ const getPPorangnya = async () => {
 const reply = (teks) => {
 // [FIX CONTEXT-LEAK] Snapshot 'from' sudah diambil saat command mulai (closure).
 // Gunakan socket hidup; log error alih-alih swallow.
+// [FIX LID] from sudah di-resolve dari m.chat, tapi tambah safety check
 const _c = (typeof global.getLiveConn === 'function' && global.getLiveConn()) || NXL
-return _c.sendMessage(from, { text : teks }, {quoted:m}).catch(err => {
-  console.error('[REPLY ERROR]', from, err?.message || err)
+const _target = (from && from.endsWith('@lid')) ? m.sender : from
+return _c.sendMessage(_target, { text : teks }, {quoted:m}).catch(err => {
+  console.error('[REPLY ERROR]', _target, err?.message || err)
 })
 }
 const qtext = {key: {remoteJid: "status@broadcast", participant: "0@s.whatsapp.net"}, message: {"extendedTextMessage": {"text": `${global.ownername} ${global.versibot}`}}}
