@@ -867,6 +867,17 @@ if (m.isGroup) {
 }
 const BLACKLIST_SWGC_PATH = './database/blacklistswgc.json'
 const BLACKLIST_JPM_PATH  = './database/blacklistjpm.json'
+
+// [ANTI-BAN] Helper: hitung delay JPM = base + random tambahan
+// JedaJpm = delay konstan (misal 4000ms)
+// JedaJpmRandom = random tambahan 0 sampai N ms (misal 10000 = random 0-10 detik)
+// Total delay = JedaJpm + Math.random() * JedaJpmRandom
+function getJpmDelay() {
+  const base = global.JedaJpm || 4000
+  const randomMax = global.JedaJpmRandom || 0
+  if (randomMax <= 0) return base
+  return base + Math.floor(Math.random() * randomMax)
+}
 const JOINFILTER_PATH     = './database/joinfilter.json'
 
 
@@ -3372,7 +3383,7 @@ case "jpmch": {
     lockFlag: 'statusjpm',
     stopFlag: 'stopjpm',
     targets: channelList,
-    delayMs: () => global.JedaJpm || 5000,
+    delayMs: () => getJpmDelay(),
     sendOne: async (conn, chId) => { await conn.sendMessage(chId, global.messageJpm) },
     cleanup: () => { if (mediaPath && fs.existsSync(mediaPath)) fs.unlinkSync(mediaPath) }
   })
@@ -3484,7 +3495,7 @@ const cards = rawSlides.map((slideText) => ({
     lockFlag: 'statusjpm',
     stopFlag: 'stopjpm',
     targets: filteredGroupIds,
-    delayMs: () => global.JedaJpm || 5000,
+    delayMs: () => getJpmDelay(),
     sendOne: async (conn, groupId) => {
       const carouselMsg = await buildCarousel(groupId)
       await conn.relayMessage(groupId, carouselMsg.message, { messageId: carouselMsg.key.id })
@@ -3551,7 +3562,7 @@ case "jasher": case "jpm": case "jaser": {
   }
 
   const initialCount = Object.keys(allGroups).filter(id => !blacklistIds.includes(id)).length
-  await m.reply(`⏳ JPM ${jenis} dimulai!\n📨 Target: *${initialCount}* grup\n⏱️ Jeda: *${(global.JedaJpm || 4000) / 1000}* detik${global.allGroupsFetching ? ' (prefetch berjalan...)' : ''}`)
+  await m.reply(`⏳ JPM ${jenis} dimulai!\n📨 Target: *${initialCount}* grup\n⏱️ Jeda: *${(global.JedaJpm || 4000) / 1000}* detik${global.JedaJpmRandom > 0 ? ` + random 0-${(global.JedaJpmRandom / 1000).toFixed(1)} detik` : ''}${global.allGroupsFetching ? ' (prefetch berjalan...)' : ''}`)
 
   while (true) {
     if (global.stopjpm) { delete global.stopjpm; break }
@@ -3575,7 +3586,7 @@ case "jasher": case "jpm": case "jaser": {
 
     const hasMore = getNextId() !== null || global.allGroupsFetching
     if (hasMore) {
-      await new Promise(r => setTimeout(r, global.JedaJpm || 4000))
+      await new Promise(r => setTimeout(r, getJpmDelay()))
     }
   }
 
@@ -3638,7 +3649,7 @@ case "jpmht": {
     lockFlag: 'statusjpm',
     stopFlag: 'stopjpm',
     targets: filteredGroupIds,
-    delayMs: () => global.JedaJpm || 5000,
+    delayMs: () => getJpmDelay(),
     sendOne: async (conn, groupId) => {
       const _localMsg = { ...global.messageJpm }
       _localMsg.mentions = (allGroups[groupId]?.participants || []).map(e => e.jid || e.id)
@@ -3698,7 +3709,7 @@ break
 case "setjeda": {
     if (!isCreator) return m.reply(mess.owner);
 
-    const infoJeda = `*Contoh :*\n${command} push 5000\n${command} jpm 6000\n\nKeterangan format waktu:\n1 detik = 1000\n\nJeda waktu saat ini:\nJeda Pushkontak > ${global.JedaPushkontak}\nJeda JPM > ${global.JedaJpm}`;
+    const infoJeda = `*Contoh :*\n${command} push 5000\n${command} jpm 6000\n${command} jpm 4000 10000\n\nKeterangan format waktu:\n1 detik = 1000\n\n*Format JPM:* setjeda jpm [base] [random]\n_Random opsional: jeda acak 0 s/d N ms ditambah ke base_\n\nJeda waktu saat ini:\nJeda Pushkontak > ${global.JedaPushkontak}ms\nJeda JPM > ${global.JedaJpm}ms + random ${global.JedaJpmRandom || 0}ms`;
 
     if (!text) return m.reply(infoJeda);
 
@@ -3723,9 +3734,16 @@ case "setjeda": {
 
     if (target === "jpm") {
         let newData = data.replace(/global\.JedaJpm\s*=\s*\d+/, `global.JedaJpm = ${jeda}`);
+        // Update random jika diberikan argumen ketiga
+        if (jedaArgs[2] && !isNaN(parseInt(jedaArgs[2]))) {
+            const randomVal = Math.max(0, parseInt(jedaArgs[2]))
+            newData = newData.replace(/global\.JedaJpmRandom\s*=\s*\d+/, `global.JedaJpmRandom = ${randomVal}`)
+            global.JedaJpmRandom = randomVal
+        }
         fs.writeFileSync(path, newData, "utf-8");
         global.JedaJpm = jeda;
-        return m.reply(`✅ Berhasil mengubah *Jeda JPM* menjadi *${jeda}* ms`);
+        const randomInfo = global.JedaJpmRandom > 0 ? `\n🎲 Random tambahan: *0 - ${global.JedaJpmRandom}ms*` : ''
+        return m.reply(`✅ Berhasil mengubah *Jeda JPM* menjadi *${jeda}ms*${randomInfo}`);
     }
 
     return m.reply(`Pilihan tidak valid!\nGunakan: *push* atau *jpm*`);
@@ -6245,11 +6263,16 @@ break
 
 case 'jedajpm': {
   if (!isCreator) return reply(mess.owner)
-  if (!text || isNaN(parseInt(text))) return m.reply(`*Contoh :* .jedajpm 4000\n\nJeda saat ini: *${global.JedaJpm}ms*`)
-  const jeda = parseInt(text)
+  if (!text || isNaN(parseInt(text))) return m.reply(`*Contoh :* .jedajpm 4000\n.jedajpm 4000 10000\n\n_Format: .jedajpm [base] [random]_\n_Random opsional: jeda acak 0 s/d N ms ditambah ke base_\n\nJeda saat ini: *${global.JedaJpm}ms* + random *${global.JedaJpmRandom || 0}ms*`)
+  const parts = text.trim().split(/\s+/)
+  const jeda = parseInt(parts[0])
   if (jeda < 1000) return m.reply("Minimal jeda 1000ms (1 detik).")
   global.JedaJpm = jeda
-  m.reply(`✅ Jeda JPM diset ke *${jeda}ms*`)
+  if (parts[1] && !isNaN(parseInt(parts[1]))) {
+    global.JedaJpmRandom = Math.max(0, parseInt(parts[1]))
+  }
+  const randomInfo = global.JedaJpmRandom > 0 ? `\n🎲 Random tambahan: *0 - ${global.JedaJpmRandom}ms* (${(global.JedaJpmRandom / 1000).toFixed(1)} detik)` : ''
+  m.reply(`✅ Jeda JPM diset ke *${jeda}ms* (${(jeda / 1000).toFixed(1)} detik)${randomInfo}`)
 }
 break
 
@@ -6336,7 +6359,7 @@ case 'autojpm': {
     lockFlag: 'statusjpm',
     stopFlag: 'stopjpm',
     targets: groupIdsJpm,
-    delayMs: () => global.JedaJpm || 4000,
+    delayMs: () => getJpmDelay(),
     sendOne: async (conn, gid) => { await conn.sendMessage(gid, jpmC, { quoted: FakeChannel }) }
   })
 
@@ -6447,7 +6470,7 @@ case 'jaserht': {
     lockFlag: 'statusjpm',
     stopFlag: 'stopjpm',
     targets: filteredHt,
-    delayMs: () => global.JedaJpm || 4000,
+    delayMs: () => getJpmDelay(),
     sendOne: async (conn, gid) => {
       const members = allGroupsHt[gid]?.participants?.map(e => e.jid || e.id) || []
       const htContent = jaserhtPath
@@ -7971,7 +7994,7 @@ case "jpm2": {
     lockFlag: 'statusjpm',
     stopFlag: 'stopjpm',
     targets: jpm2Filtered,
-    delayMs: () => global.JedaJpm || 5000,
+    delayMs: () => getJpmDelay(),
     sendOne: async (conn, gid) => { await conn.sendMessage(gid, jpm2Content, { quoted: FakeChannel }) },
     cleanup: () => { if (jpm2Media && fs.existsSync(jpm2Media)) fs.unlinkSync(jpm2Media) }
   })
@@ -8021,7 +8044,7 @@ case "jpmtesti": {
     lockFlag: 'statusjpm',
     stopFlag: 'stopjpm',
     targets: testiFiltered,
-    delayMs: () => global.JedaJpm || 5000,
+    delayMs: () => getJpmDelay(),
     sendOne: async (conn, gid) => {
       await conn.sendMessage(gid, {
         image: fs.readFileSync(testiMedia),

@@ -145,6 +145,7 @@ global.limitawal       = 10              // limit command awal untuk user baru
 global.JedaSwgc        = 5000
 global.JedaPushkontak  = 5000
 global.JedaJpm         = 4000
+global.JedaJpmRandom   = 0      // Random tambahan (ms). Contoh: 10000 = random 0-10 detik ditambah ke JedaJpm
 
 
 // ── ANTILINK FALLBACK ─────────────────────────────────────────
