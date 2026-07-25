@@ -2174,10 +2174,14 @@ let listMessage = { title: 'List Menu', sections }
   ╭◙  *Download Menu*
   ┆• .twitter
   ┆• .threads
+  ┆• .terabox
   ┆• .gdrive
   ┆• .gitclone
   ┆• .save
   ┆• .pin
+  ╰◙
+  ╭◙  *Tools Menu*
+  ┆• .bikincard
   ╰◙
   ╭◙  *Fun Menu*
   ┆• .artinama
@@ -7899,7 +7903,25 @@ break
 
 case "threads": case "threadsdl": {
   if (!text||!text.includes('threads.net')) return m.reply(`*Contoh:* ${command} ${global.threadsWeb}/...`)
-  try { const r=await axios.get(`${global.apiSiputzx}/api/d/threads?url=${encodeURIComponent(text)}`); const d=r.data?.data||r.data; if(d?.video) await NXL.sendMessage(m.chat,{video:{url:d.video},caption:d.caption||''},{quoted:m}); else if(d?.image) await NXL.sendMessage(m.chat,{image:{url:d.image},caption:d.caption||''},{quoted:m}); else m.reply('❌ Media tidak ditemukan') } catch { m.reply('❌ Gagal download Threads') }
+  try {
+    const { data } = await axios.post("https://www.threadsdl.app/api/threads", { url: text }, { headers: { "Content-Type": "application/json" } })
+    const media = []
+    for (const item of data.medias || []) {
+      if (item.images?.length) media.push(...item.images.map(img => ({ type: "image", url: img.url })))
+      if (item.videos?.length) media.push({ type: "video", url: (item.videos.find(v => v.type === 101) || item.videos[0]).url })
+    }
+    if (media.length === 0) return m.reply('❌ Media tidak ditemukan')
+    const caption = data.text ? `📝 *${data.username || ''}*\n\n${data.text}` : `📝 *${data.username || ''}*`
+    for (const item of media) {
+      if (item.type === 'video') {
+        await NXL.sendMessage(m.chat, { video: { url: item.url }, caption }, { quoted: m })
+      } else {
+        await NXL.sendMessage(m.chat, { image: { url: item.url }, caption }, { quoted: m })
+      }
+    }
+  } catch (e) {
+    m.reply(`❌ Gagal download Threads: ${e?.message || e}`)
+  }
 }
 break
 
@@ -7914,6 +7936,86 @@ break
 case "gitclone": {
   if (!text||!text.includes('github.com')) return m.reply(`*Contoh:* ${command} ${global.githubWeb}/user/repo`)
   try { const mt=text.match(/github\.com\/([^\/]+)\/([^\/\s]+)/); if(!mt) return m.reply('❌ URL tidak valid'); await NXL.sendMessage(m.chat,{document:{url:`${global.githubWeb}/${mt[1]}/${mt[2].replace('.git','')}/archive/refs/heads/main.zip`},mimetype:'application/zip',fileName:`${mt[2].replace('.git','')}.zip`},{quoted:m}) } catch { m.reply('❌ Gagal clone. Pastikan repo public.') }
+}
+break
+
+case "terabox":
+case "teradl": {
+  if (!text) return m.reply(`*Contoh:* .${command} https://www.terabox.app/...`)
+  if (!text.includes('terabox')) return m.reply('❌ URL harus link Terabox yang valid!')
+  try {
+    await m.reply('⏳ Mengambil data Terabox...')
+    const { data } = await axios.post("https://teradownloadertool.com/api/download", { url: text }, { headers: { "Content-Type": "application/json" } })
+    if (!data.success) return m.reply('❌ Gagal mengambil data Terabox.')
+    const d = data.data
+    let teks = `📦 *TERABOX DOWNLOADER*\n\n`
+    teks += `📁 *Judul:* ${d.title || '-'}\n`
+    teks += `📐 *Ukuran:* ${d.size || '-'}\n`
+    teks += `⏱️ *Durasi:* ${d.duration || '-'}\n\n`
+    if (d.qualities && d.qualities.length > 0) {
+      teks += `🔗 *Link Download:*\n`
+      for (const q of d.qualities) {
+        teks += `• ${q.quality || q.label || 'Download'}: ${q.url || q.link || '-'}\n`
+      }
+    }
+    if (d.thumbnail) {
+      await NXL.sendMessage(m.chat, { image: { url: d.thumbnail }, caption: teks }, { quoted: m })
+    } else {
+      m.reply(teks)
+    }
+  } catch (e) {
+    m.reply(`❌ Gagal download Terabox: ${e?.response?.data?.message || e?.message || e}`)
+  }
+}
+break
+
+case "bikincard":
+case "cardmaker": {
+  if (!text) return m.reply(`*Contoh:* .${command} teks yang ingin ditulis di card`)
+  try {
+    await m.reply('⏳ Membuat card...')
+    const { createCanvas, loadImage, GlobalFonts } = require("@napi-rs/canvas")
+    const { data: bgData } = await axios.get(
+      "https://raw.githubusercontent.com/rzkrohanmedia/cloud-backup/main/uploads/KyzoCDN_1784739409872_undefined.png",
+      { responseType: "arraybuffer" }
+    )
+    const bg = await loadImage(Buffer.from(bgData))
+    const canvas = createCanvas(1080, 1920)
+    const ctx = canvas.getContext("2d")
+    ctx.drawImage(bg, 0, 0, 1080, 1920)
+    ctx.font = "36px sans-serif"
+    ctx.fillStyle = "#444444"
+    ctx.textAlign = "left"
+    ctx.textBaseline = "top"
+
+    const paragraphs = String(text).split("\\n")
+    let y = 286
+    const maxWidth = 785
+    const lineHeight = 46
+
+    for (const paragraph of paragraphs) {
+      const words = paragraph.split(" ")
+      let line = ""
+      for (const word of words) {
+        const testLine = line + word + " "
+        if (ctx.measureText(testLine).width > maxWidth && line !== "") {
+          ctx.fillText(line.trim(), 150, y)
+          line = word + " "
+          y += lineHeight
+        } else {
+          line = testLine
+        }
+      }
+      if (line) {
+        ctx.fillText(line.trim(), 150, y)
+        y += lineHeight
+      }
+    }
+
+    await NXL.sendMessage(m.chat, { image: canvas.toBuffer("image/png"), caption: '✅ Card berhasil dibuat!' }, { quoted: m })
+  } catch (e) {
+    m.reply(`❌ Gagal membuat card: ${e?.message || e}`)
+  }
 }
 break
 
