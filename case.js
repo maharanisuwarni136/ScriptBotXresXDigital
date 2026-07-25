@@ -3390,10 +3390,8 @@ case "jpmch": {
 
   if (_res.rejected) return m.reply(`⚠️ JPM sedang berjalan, tunggu sampai selesai!`)
 
-  if (global.pendingGroupsRefresh && global._nxlConn) {
-    global.pendingGroupsRefresh = false
-    global.prefetchAllGroups().catch(() => {})
-  }
+  global.pendingGroupsRefresh = false
+  global.prefetchAllGroups().catch(() => {})
 
   await m.reply(`✅ JPM Channel selesai!\nTerkirim ke *${_res.sukses}/${channelList.length}* Channel.`)
 }
@@ -3507,10 +3505,9 @@ const cards = rawSlides.map((slideText) => ({
 
   if (_res.rejected) return m.reply(`⚠️ JPM sedang berjalan, tunggu sampai selesai atau hentikan dengan .stopjpm`)
 
-  if (global.pendingGroupsRefresh && global._nxlConn) {
-    global.pendingGroupsRefresh = false
-    global.prefetchAllGroups?.().catch(() => {})
-  }
+  global.pendingGroupsRefresh = false
+  global.prefetchAllGroups().catch(() => {})
+
   await NXL.sendMessage(senderChat, {
     text: `✅ JPM Slide selesai!\nTerkirim ke *${_res.sukses}/${filteredGroupIds.length}* grup.\n${skipped > 0 ? `⛔ Di-skip blacklist: *${skipped}* grup` : ''}`
   }, { quoted: m })
@@ -3594,10 +3591,9 @@ case "jasher": case "jpm": case "jaser": {
   if (mediaPath && fs.existsSync(mediaPath)) fs.unlinkSync(mediaPath)
   delete global.statusjpm
 
-  if (global.pendingGroupsRefresh && global._nxlConn) {
-    global.pendingGroupsRefresh = false
-    global.prefetchAllGroups().catch(() => {})
-  }
+  global.pendingGroupsRefresh = false
+  global.prefetchAllGroups().catch(() => {})
+
   await NXL.sendMessage(senderChat, {
     text: `✅ JPM ${jenis} selesai!\nTerkirim ke *${successCount}/${seenIds.size}* grup.\n${skipped > 0 ? `⛔ Di-skip blacklist: *${skipped}* grup` : ''}`
   }, { quoted: m })
@@ -3661,10 +3657,9 @@ case "jpmht": {
 
   if (_res.rejected) return m.reply(`⚠️ JPM sedang berjalan, tunggu sampai selesai!`)
 
-  if (global.pendingGroupsRefresh && global._nxlConn) {
-    global.pendingGroupsRefresh = false
-    global.prefetchAllGroups().catch(() => {})
-  }
+  global.pendingGroupsRefresh = false
+  global.prefetchAllGroups().catch(() => {})
+
   await NXL.sendMessage(senderChat, {
     text: `✅ JPM Hidetag ${jenis} selesai!\nTerkirim ke *${_res.sukses}/${filteredGroupIds.length}* grup.\n${skipped > 0 ? `⛔ Di-skip blacklist: *${skipped}* grup` : ''}`
   }, { quoted: m })
