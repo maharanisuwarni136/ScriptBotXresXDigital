@@ -4879,6 +4879,8 @@ case 'song': {
   if (!text) return m.reply(`*PENGGUNAAN SALAH*\n\nFormat: .${command} [judul_lagu]\nContoh: .${command} Night Changes`)
 
   try {
+    await NXL.sendMessage(m.chat, { react: { text: "🔎", key: m.key } })
+
     // Pencarian via @vreden/youtube_scraper (search) + yt-search (fallback)
     let video = null
     try {
@@ -4895,7 +4897,10 @@ case 'song': {
       if (found) video = { title: found.title, url: found.url, thumbnail: found.thumbnail, duration: found.seconds }
     }
 
-    if (!video) return m.reply('❌ Hasil pencarian kosong atau lagu tidak ditemukan')
+    if (!video) {
+      await NXL.sendMessage(m.chat, { react: { text: "❌", key: m.key } })
+      return m.reply('❌ Hasil pencarian kosong atau lagu tidak ditemukan')
+    }
 
     const videoUrl = video.url || video.videoUrl || `https://www.youtube.com/watch?v=${video.videoId || video.id}`
     const title = video.title || 'Unknown'
@@ -4935,7 +4940,10 @@ case 'song': {
       } catch {}
     }
 
-    if (!audioUrl) return m.reply('❌ Gagal mendapatkan link download audio. Coba lagi nanti.')
+    if (!audioUrl) {
+      await NXL.sendMessage(m.chat, { react: { text: "❌", key: m.key } })
+      return m.reply('❌ Gagal mendapatkan link download audio. Coba lagi nanti.')
+    }
 
     await NXL.sendMessage(m.chat, {
       audio: { url: audioUrl },
@@ -4943,8 +4951,11 @@ case 'song': {
       ptt: false
     }, { quoted: m })
 
+    await NXL.sendMessage(m.chat, { react: { text: "✅", key: m.key } })
+
   } catch (e) {
     console.error('[PLAY ERROR]', e.message)
+    await NXL.sendMessage(m.chat, { react: { text: "❌", key: m.key } })
     m.reply('[ ERROR SYSTEM ] Gagal memproses data musik, silakan coba beberapa saat lagi')
   }
 }
