@@ -4155,6 +4155,33 @@ case "blacklistjpm":
 case "bljpm": {
   if (!isCreator) return m.reply(mess.owner)
 
+  // Opsi B: Jika ada argumen (ID grup langsung), tambahkan sekaligus
+  if (text && text.includes('@g.us')) {
+    const ids = text.trim().split(/\s+/).filter(id => id.endsWith('@g.us'))
+    if (ids.length === 0) return m.reply('❌ ID grup tidak valid. Pastikan format: 120363xxx@g.us')
+    let blacklist = []
+    try { blacklist = loadBlacklistJpm() } catch { blacklist = [] }
+    let added = []
+    let skipped = []
+    for (const groupId of ids) {
+      if (blacklist.find(v => v.id === groupId)) {
+        skipped.push(groupId)
+        continue
+      }
+      let nama = groupId
+      try { const meta = await NXL.groupMetadata(groupId); nama = meta.subject || groupId } catch {}
+      blacklist.push({ id: groupId, name: nama })
+      added.push(`• ${nama}`)
+    }
+    if (added.length > 0) saveBlacklistJpm(blacklist)
+    let teks = ''
+    if (added.length > 0) teks += `✅ *${added.length} grup* ditambahkan ke blacklist JPM:\n${added.join('\n')}\n\n`
+    if (skipped.length > 0) teks += `⏭️ *${skipped.length} grup* sudah ada di blacklist (skip)`
+    if (!teks) teks = '⚠️ Tidak ada grup yang ditambahkan.'
+    return m.reply(teks)
+  }
+
+  // Opsi A: Tanpa argumen → tampilkan list button (bisa pilih berulang)
   let a
   try {
     a = await Promise.race([
@@ -4230,7 +4257,7 @@ case "bljpm-response": {
   blacklist.push({ id: groupId, name: res.subject })
   saveBlacklistJpm(blacklist)
 
-  await m.reply(`✅ Berhasil menambahkan grup ke blacklist JPM\n\n- Grup: *${res.subject}*\n- ID: ${groupId}`)
+  await m.reply(`✅ Berhasil menambahkan grup ke blacklist JPM\n\n- Grup: *${res.subject}*\n- ID: ${groupId}\n\n_Ketik .bljpm lagi untuk blacklist grup lainnya, atau .listbljpm untuk lihat daftar._`)
 }
 break
 
@@ -8223,7 +8250,7 @@ case "pat": {
   try {
     const r = await axios.get(`${global.apiPurrbot}/api/img/sfw/pat/gif`)
     const u = r.data?.link
-    if (u) await NXL.sendMessage(m.chat, { video: { url: u }, gifPlayback: true, caption: `${command}` }, { quoted: m })
+    if (u) await NXL.sendMessage(m.chat, { video: { url: u }, caption: `${command}` }, { quoted: m })
     else m.reply('❌ Gagal mengambil gambar')
   } catch { m.reply('❌ Gagal mengambil gambar') }
 }
@@ -8234,7 +8261,7 @@ case "hug": {
   try {
     const r = await axios.get(`${global.apiPurrbot}/api/img/sfw/hug/gif`)
     const u = r.data?.link
-    if (u) await NXL.sendMessage(m.chat, { video: { url: u }, gifPlayback: true, caption:`${command}` }, { quoted: m })
+    if (u) await NXL.sendMessage(m.chat, { video: { url: u }, caption:`${command}` }, { quoted: m })
     else m.reply('❌ Gagal mengambil gambar')
   } catch { m.reply('❌ Gagal mengambil gambar') }
 }
@@ -8245,7 +8272,7 @@ case "kiss": {
   try {
     const r = await axios.get(`${global.apiPurrbot}/api/img/sfw/kiss/gif`)
     const u = r.data?.link
-    if (u) await NXL.sendMessage(m.chat, { video: { url: u }, gifPlayback: true, caption: `${command}` }, { quoted: m })
+    if (u) await NXL.sendMessage(m.chat, { video: { url: u }, caption: `${command}` }, { quoted: m })
     else m.reply('❌ Gagal mengambil gambar')
   } catch { m.reply('❌ Gagal mengambil gambar') }
 }
@@ -8256,7 +8283,7 @@ case "cuddle": {
   try {
     const r = await axios.get(`${global.apiPurrbotV2}/v2/img/sfw/blush/gif`)
     const u = r.data?.link
-    if (u) await NXL.sendMessage(m.chat, { video: { url: u }, gifPlayback: true, caption: `${command}` }, { quoted: m })
+    if (u) await NXL.sendMessage(m.chat, { video: { url: u }, caption: `${command}` }, { quoted: m })
     else m.reply('❌ Gagal mengambil gambar')
   } catch { m.reply('❌ Gagal mengambil gambar') }
 }
@@ -8267,7 +8294,7 @@ case "blush": {
   try {
     const r = await axios.get(`${global.apiPurrbot}/api/img/sfw/blush/gif`)
     const u = r.data?.link
-    if (u) await NXL.sendMessage(m.chat, { video: { url: u }, gifPlayback: true, caption:`${command}` }, { quoted: m })
+    if (u) await NXL.sendMessage(m.chat, { video: { url: u }, caption:`${command}` }, { quoted: m })
     else m.reply('❌ Gagal mengambil gambar')
   } catch { m.reply('❌ Gagal mengambil gambar') }
 }
@@ -8278,7 +8305,7 @@ case "smile": {
   try {
     const r = await axios.get(`${global.apiPurrbotV2}/v2/img/nsfw/yuri/gif`)
     const u = r.data?.link
-    if (u) await NXL.sendMessage(m.chat, { video: { url: u }, gifPlayback: true, caption: `${command}` }, { quoted: m })
+    if (u) await NXL.sendMessage(m.chat, { video: { url: u }, caption: `${command}` }, { quoted: m })
     else m.reply('❌ Gagal mengambil gambar')
   } catch { m.reply('❌ Gagal mengambil gambar') }
 }
@@ -8289,7 +8316,7 @@ case "dance": {
   try {
     const r = await axios.get(`${global.apiPurrbot}/api/img/sfw/dance/gif`)
     const u = r.data?.link
-    if (u) await NXL.sendMessage(m.chat, { video: { url: u }, gifPlayback: true, caption: '💃 *Dance*' }, { quoted: m })
+    if (u) await NXL.sendMessage(m.chat, { video: { url: u }, caption: '💃 *Dance*' }, { quoted: m })
     else m.reply('❌ Gagal mengambil gambar')
   } catch { m.reply('❌ Gagal mengambil gambar') }
 }
