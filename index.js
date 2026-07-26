@@ -864,9 +864,16 @@ NXL.ev.on('call', async (calls) => {
 NXL.ev.on('groups.update', async (update) => {
 		try {
 
-		if (global.notifGrup === false) return
+		// [FIX] Notif grup sekarang per-grup (bukan global ON/OFF untuk semua)
+		// Hanya grup yang ada di daftar notifgrup yang akan menerima notifikasi
+		if (!global.notifGrupList) {
+			try { global.notifGrupList = JSON.parse(fs.readFileSync('./database/notifgrup.json', 'utf8')) } catch { global.notifGrupList = [] }
+		}
 
 		const data = update[0]
+		if (!data || !data.id) return
+		if (!global.notifGrupList.includes(data.id)) return
+
 		const qtext = {
     key: {
       remoteJid: "status@broadcast",

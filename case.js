@@ -2730,10 +2730,14 @@ break
 case "status": case "statusgrup": {
 if (!isCreator) return m.reply(mess.owner);
 if (!m.isGroup) return m.reply(mess.group);
+if (!global.notifGrupList) {
+  try { global.notifGrupList = JSON.parse(fs.readFileSync('./database/notifgrup.json', 'utf8')) } catch { global.notifGrupList = [] }
+}
 const teks = `
 - Antilink : ${Antilink.includes(m.chat) ? "✅" : "❌"}
 - Antilink2 : ${Antilink2.includes(m.chat) ? "✅" : "❌"}
 - Welcome : ${welcome.includes(m.chat) ? "✅" : "❌"}
+- Notif Grup : ${global.notifGrupList.includes(m.chat) ? "✅" : "❌"}
 
 _✅ = Aktif_
 _❌ = Tidak Aktif_
@@ -6521,48 +6525,32 @@ case 'jaserht': {
 break
 
 case 'notifgrup': {
-  if (!isCreator) return reply(mess.owner)
-  if (global.notifGrup === undefined) global.notifGrup = true
+  if (!isCreator && !isAdmins) return reply(mess.admin)
+  if (!m.isGroup) return reply(mess.group)
+
+  if (!global.notifGrupList) {
+    try { global.notifGrupList = JSON.parse(fs.readFileSync('./database/notifgrup.json', 'utf8')) } catch { global.notifGrupList = [] }
+  }
 
   const subCmd = args[0]?.toLowerCase()
+  const isActive = global.notifGrupList.includes(m.chat)
 
   if (subCmd === 'on') {
-    if (global.notifGrup === true) return reply(`> [ NXL BOT ]\n\`INFO\`\n*Notif Grup sudah ON*\n<>`)
-    global.notifGrup = true
-    return reply(`> [ NXL BOT ]\n\`BERHASIL\`\n*Notif Grup dinyalakan*\n_Perubahan grup akan dikirim kembali_\n<>`)
+    if (isActive) return reply(`> [ NXL BOT ]\n\`INFO\`\n*Notif Grup sudah ON di grup ini*\n<>`)
+    global.notifGrupList.push(m.chat)
+    safeWriteJSON('./database/notifgrup.json', global.notifGrupList)
+    return reply(`> [ NXL BOT ]\n\`BERHASIL\`\n*Notif Grup dinyalakan untuk grup ini*\n_Perubahan grup akan dikirim kembali_\n<>`)
   }
 
   if (subCmd === 'off') {
-    if (global.notifGrup === false) return reply(`> [ NXL BOT ]\n\`INFO\`\n*Notif Grup sudah OFF*\n<>`)
-    global.notifGrup = false
-    return reply(`> [ NXL BOT ]\n\`BERHASIL\`\n*Notif Grup dimatikan*\n_Bot tidak akan kirim notif perubahan grup_\n<>`)
+    if (!isActive) return reply(`> [ NXL BOT ]\n\`INFO\`\n*Notif Grup sudah OFF di grup ini*\n<>`)
+    global.notifGrupList = global.notifGrupList.filter(id => id !== m.chat)
+    safeWriteJSON('./database/notifgrup.json', global.notifGrupList)
+    return reply(`> [ NXL BOT ]\n\`BERHASIL\`\n*Notif Grup dimatikan untuk grup ini*\n_Bot tidak akan kirim notif perubahan di grup ini_\n<>`)
   }
 
-
-  const status = global.notifGrup !== false ? '🟢 ON' : '🔴 OFF'
-  try {
-    await NXL.relayMessage(m.chat, {
-      interactiveMessage: proto.Message.InteractiveMessage.create({
-        contextInfo: {
-          isForwarded: true,
-          forwardedNewsletterMessageInfo: { newsletterJid: global.idsal || '', newsletterName: wm, serverMessageId: -1 }
-        },
-        body: proto.Message.InteractiveMessage.Body.create({
-          text: `╭─「 *🔔 NOTIF GRUP* 」\n│\n│  Status : *${status}*\n│\n│  Notifikasi saat ada yang:\n│  • Ganti nama grup\n│  • Update deskripsi grup\n│  • Reset link grup\n╰─「 *${wm}* 」`
-        }),
-        footer: proto.Message.InteractiveMessage.Footer.create({ text: `© ${wm}` }),
-        header: proto.Message.InteractiveMessage.Header.create({ title: `🔔 Notif Grup`, hasMediaAttachment: false }),
-        nativeFlowMessage: proto.Message.InteractiveMessage.NativeFlowMessage.create({
-          buttons: [
-            { name: 'quick_reply', buttonParamsJson: JSON.stringify({ display_text: '🟢 ON', id: '.notifgrup on' }) },
-            { name: 'quick_reply', buttonParamsJson: JSON.stringify({ display_text: '🔴 OFF', id: '.notifgrup off' }) }
-          ]
-        })
-      })
-    }, {})
-  } catch (e) {
-    reply(`> [ NXL BOT ]\n\`NOTIF GRUP\`\n*Status : ${status}*\n\n_Ketik .notifgrup on/off_\n<>`)
-  }
+  const status = isActive ? '🟢 ON' : '🔴 OFF'
+  reply(`> [ NXL BOT ]\n\`NOTIF GRUP\`\n*Status : ${status}*\n\n_Ketik .notifgrup on/off_\n<>`)
 }
 break
 
