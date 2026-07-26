@@ -7469,8 +7469,11 @@ case "fitnah": case "fakereply": {
   if (m.mentionedJid?.[0]) { fitnahTarget = m.mentionedJid[0] }
   else { let n = fitnahParts[0].replace(/[^0-9]/g,''); if(!n.startsWith('62'))n='62'+n; fitnahTarget=n+'@s.whatsapp.net' }
   if (!fitnahTarget) return m.reply('Target tidak valid')
-  let fitnahNama = fitnahTarget.split('@')[0]
-  await NXL.sendMessage(m.chat, { text: fitnahParts[fitnahParts.length-1], contextInfo: { quotedMessage: { conversation: fitnahParts[fitnahParts.length-2] }, stanzaId: 'FAKE_'+Date.now(), participant: fitnahTarget } })
+  try {
+    await NXL.sendMessage(m.chat, { text: fitnahParts[fitnahParts.length-1], contextInfo: { quotedMessage: { conversation: fitnahParts[fitnahParts.length-2] }, stanzaId: 'FAKE_'+Date.now(), participant: fitnahTarget } }, { quoted: m })
+  } catch (e) {
+    m.reply(`❌ Gagal mengirim fake reply: ${e?.message || e}`)
+  }
 }
 break
 
