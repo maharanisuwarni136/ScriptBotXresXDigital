@@ -9434,5 +9434,6 @@ if (stdout) return reply(stdout)
 
 } catch (err) {
 console.log(util.format(err))
+if (m && m.reply) m.reply(`⚠️ Terjadi kesalahan: ${err?.message || err}`)
 }
 }
