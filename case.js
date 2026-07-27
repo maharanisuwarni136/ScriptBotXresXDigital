@@ -9446,18 +9446,18 @@ case 'clearsession':
 case 'boost': {
   if (!isCreator) return m.reply(mess.owner)
   try {
-    const sessionDir = './session'
     const tmpDir = './Tmp'
-    let sessionCount = 0, tmpCount = 0
-    if (fs.existsSync(sessionDir)) {
-      const files = fs.readdirSync(sessionDir).filter(f => f !== 'creds.json')
-      for (const f of files) { try { fs.unlinkSync(`${sessionDir}/${f}`); sessionCount++ } catch {} }
-    }
+    let tmpCount = 0
+    // Hanya bersihkan Tmp/ (file sementara download/sticker)
+    // JANGAN hapus session/ saat bot running — Baileys akan recreate dan menyebabkan spam
     if (fs.existsSync(tmpDir)) {
       const files = fs.readdirSync(tmpDir)
       for (const f of files) { try { fs.unlinkSync(`${tmpDir}/${f}`); tmpCount++ } catch {} }
     }
-    m.reply(`✅ *Berhasil membersihkan sampah!*\n\n📁 Session: *${sessionCount}* file dihapus\n🗑️ Tmp: *${tmpCount}* file dihapus\n\n_Bot lebih ringan sekarang_`)
+    // Bersihkan juga cache yang tidak perlu di memory
+    if (global._menuMediaCache) { global._menuMediaCache = null }
+    if (global.gambar1Cache) { global.gambar1Cache = null }
+    m.reply(`✅ *Boost selesai!*\n\n🗑️ File tmp dihapus: *${tmpCount}*\n🧹 Memory cache dibersihkan\n\n_Bot lebih ringan sekarang_`)
   } catch (e) {
     m.reply(`❌ Gagal: ${e.message}`)
   }
