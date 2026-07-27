@@ -9915,6 +9915,167 @@ break
 
 // [END BATCH 2]
 
+// ============================================================================
+// [BATCH 3] — Download, Music, Schedule, Maker
+// ============================================================================
+
+case 'soundcloud':
+case 'soundclouddl':
+case 'scdl': {
+  if (!text) return m.reply(`*Contoh:* .${command} https://soundcloud.com/artist/track`)
+  if (!text.includes('soundcloud.com')) return m.reply('❌ Link harus dari SoundCloud!')
+  try {
+    await NXL.sendMessage(m.chat, { react: { text: "⏳", key: m.key } })
+    const res = await axios.get(`https://api.siputzx.my.id/api/d/soundcloud?url=${encodeURIComponent(text)}`, { timeout: 30000 })
+    const d = res.data?.data
+    if (!d || !d.url) return m.reply('❌ Gagal download SoundCloud')
+    const audioRes = await axios.get(d.url, { responseType: 'arraybuffer', timeout: 60000 })
+    await NXL.sendMessage(m.chat, { audio: Buffer.from(audioRes.data), mimetype: 'audio/mpeg', contextInfo: { externalAdReply: { title: d.title || 'SoundCloud', body: d.user || '', sourceUrl: text, mediaType: 1 } } }, { quoted: m })
+    await NXL.sendMessage(m.chat, { react: { text: "✅", key: m.key } })
+  } catch (e) {
+    await NXL.sendMessage(m.chat, { react: { text: "❌", key: m.key } })
+    m.reply(`❌ Gagal: ${e?.message || e}`)
+  }
+}
+break
+
+case 'capcut':
+case 'capcutdl': {
+  if (!text) return m.reply(`*Contoh:* .${command} https://www.capcut.com/...`)
+  if (!text.includes('capcut.com')) return m.reply('❌ Link harus dari CapCut!')
+  try {
+    await NXL.sendMessage(m.chat, { react: { text: "⏳", key: m.key } })
+    const res = await axios.get(`https://api.siputzx.my.id/api/d/capcut?url=${encodeURIComponent(text)}`, { timeout: 30000 })
+    const d = res.data?.data || res.data?.result
+    if (!d) return m.reply('❌ Gagal download CapCut')
+    const videoUrl = d.video || d.url || d.download
+    if (!videoUrl) return m.reply('❌ Video tidak ditemukan')
+    await NXL.sendMessage(m.chat, { video: { url: videoUrl }, caption: `📹 *CapCut Download*\n${d.title || ''}` }, { quoted: m })
+    await NXL.sendMessage(m.chat, { react: { text: "✅", key: m.key } })
+  } catch (e) {
+    await NXL.sendMessage(m.chat, { react: { text: "❌", key: m.key } })
+    m.reply(`❌ Gagal: ${e?.message || e}`)
+  }
+}
+break
+
+case 'facebook':
+case 'fbdl':
+case 'fb': {
+  if (!text) return m.reply(`*Contoh:* .${command} https://www.facebook.com/...`)
+  if (!text.includes('facebook.com') && !text.includes('fb.watch')) return m.reply('❌ Link harus dari Facebook!')
+  try {
+    await NXL.sendMessage(m.chat, { react: { text: "⏳", key: m.key } })
+    const res = await axios.get(`https://api.siputzx.my.id/api/d/facebook?url=${encodeURIComponent(text)}`, { timeout: 30000 })
+    const d = res.data?.data || res.data?.result
+    if (!d) return m.reply('❌ Gagal download Facebook')
+    const videoUrl = d.video || d.url || d.hd || d.sd
+    if (!videoUrl) return m.reply('❌ Video tidak ditemukan')
+    await NXL.sendMessage(m.chat, { video: { url: videoUrl }, caption: `📹 *Facebook Download*\n${d.title || ''}` }, { quoted: m })
+    await NXL.sendMessage(m.chat, { react: { text: "✅", key: m.key } })
+  } catch (e) {
+    await NXL.sendMessage(m.chat, { react: { text: "❌", key: m.key } })
+    m.reply(`❌ Gagal: ${e?.message || e}`)
+  }
+}
+break
+
+case 'vocalremover':
+case 'removevokal': {
+  if (!(/audio/.test(mime))) return m.reply(`Kirim/reply audio dengan caption .${command}`)
+  try {
+    await NXL.sendMessage(m.chat, { react: { text: "⏳", key: m.key } })
+    m.reply('⏳ Memproses pemisahan vokal... (bisa memakan waktu 1-2 menit)')
+    const mediaBuffer = m.quoted ? await m.quoted.download() : await m.download()
+    const FormData = require('form-data')
+    const form = new FormData()
+    form.append('file', mediaBuffer, { filename: 'audio.mp3' })
+    const uploadRes = await axios.post('https://uguu.se/upload', form, { headers: form.getHeaders() })
+    const fileUrl = uploadRes.data?.files?.[0]?.url
+    if (!fileUrl) throw new Error('Gagal upload audio')
+    const res = await axios.get(`https://api.siputzx.my.id/api/tools/vocalremover?url=${encodeURIComponent(fileUrl)}`, { timeout: 120000 })
+    const d = res.data?.data || res.data?.result
+    if (!d) return m.reply('❌ Gagal memproses')
+    const instrumental = d.instrumental || d.music || d.no_vocals
+    const vocals = d.vocals || d.voice
+    if (instrumental) await NXL.sendMessage(m.chat, { audio: { url: instrumental }, mimetype: 'audio/mpeg', fileName: 'instrumental.mp3' }, { quoted: m })
+    if (vocals) await NXL.sendMessage(m.chat, { audio: { url: vocals }, mimetype: 'audio/mpeg', fileName: 'vocals.mp3' }, { quoted: m })
+    if (!instrumental && !vocals) m.reply('❌ Hasil tidak tersedia')
+    else await NXL.sendMessage(m.chat, { react: { text: "✅", key: m.key } })
+  } catch (e) {
+    await NXL.sendMessage(m.chat, { react: { text: "❌", key: m.key } })
+    m.reply(`❌ Gagal: ${e?.message || e}`)
+  }
+}
+break
+
+case 'buatlagu':
+case 'createsong': {
+  if (!text) return m.reply(`*Contoh:* .${command} lagu pop tentang cinta pertama\n\nAtau: .${command} Judul Lagu, deskripsi genre & mood`)
+  try {
+    await NXL.sendMessage(m.chat, { react: { text: "🎵", key: m.key } })
+    m.reply('🎵 Generating lagu AI... (bisa memakan waktu 1-3 menit)')
+    let title = 'AI Song', prompt = text
+    if (text.includes(',')) { const p = text.split(','); title = p[0].trim(); prompt = p.slice(1).join(',').trim() }
+    const res = await axios.get(`https://api.siputzx.my.id/api/ai/suno?prompt=${encodeURIComponent(prompt)}&title=${encodeURIComponent(title)}`, { timeout: 180000 })
+    const d = res.data?.data || res.data?.result
+    if (!d || !d.audio) return m.reply('❌ Gagal generate lagu')
+    await NXL.sendMessage(m.chat, { audio: { url: d.audio }, mimetype: 'audio/mpeg', contextInfo: { externalAdReply: { title: d.title || title, body: 'AI Generated Song', mediaType: 1 } } }, { quoted: m })
+    await NXL.sendMessage(m.chat, { react: { text: "✅", key: m.key } })
+  } catch (e) {
+    await NXL.sendMessage(m.chat, { react: { text: "❌", key: m.key } })
+    m.reply(`❌ Gagal: ${e?.message || e}`)
+  }
+}
+break
+
+case 'polaroid': {
+  if (!(/image/.test(mime))) return m.reply(`Kirim/reply gambar dengan caption .${command} [teks]`)
+  try {
+    await NXL.sendMessage(m.chat, { react: { text: "⏳", key: m.key } })
+    const mediaBuffer = m.quoted ? await m.quoted.download() : await m.download()
+    const FormData = require('form-data')
+    const form = new FormData()
+    form.append('image', mediaBuffer, { filename: 'image.jpg' })
+    const uploadRes = await axios.post('https://api.imgbb.com/1/upload?key=849bd793e2106ab250ec9f0956e85cbe', form, { headers: form.getHeaders() })
+    const imgUrl = uploadRes.data?.data?.url
+    if (!imgUrl) throw new Error('Gagal upload')
+    const caption = text || ''
+    const res = await axios.get(`https://api.siputzx.my.id/api/tools/polaroid?url=${encodeURIComponent(imgUrl)}&text=${encodeURIComponent(caption)}`, { responseType: 'arraybuffer', timeout: 30000 })
+    await NXL.sendMessage(m.chat, { image: Buffer.from(res.data), caption: '📸 *Polaroid*' }, { quoted: m })
+    await NXL.sendMessage(m.chat, { react: { text: "✅", key: m.key } })
+  } catch (e) {
+    await NXL.sendMessage(m.chat, { react: { text: "❌", key: m.key } })
+    m.reply(`❌ Gagal: ${e?.message || e}`)
+  }
+}
+break
+
+case 'posterwanted':
+case 'buronan':
+case 'wanted': {
+  if (!(/image/.test(mime))) return m.reply(`Kirim/reply gambar dengan caption .${command}`)
+  try {
+    await NXL.sendMessage(m.chat, { react: { text: "⏳", key: m.key } })
+    const mediaBuffer = m.quoted ? await m.quoted.download() : await m.download()
+    const FormData = require('form-data')
+    const form = new FormData()
+    form.append('image', mediaBuffer, { filename: 'image.jpg' })
+    const uploadRes = await axios.post('https://api.imgbb.com/1/upload?key=849bd793e2106ab250ec9f0956e85cbe', form, { headers: form.getHeaders() })
+    const imgUrl = uploadRes.data?.data?.url
+    if (!imgUrl) throw new Error('Gagal upload')
+    const res = await axios.get(`https://api.siputzx.my.id/api/tools/wanted?url=${encodeURIComponent(imgUrl)}`, { responseType: 'arraybuffer', timeout: 30000 })
+    await NXL.sendMessage(m.chat, { image: Buffer.from(res.data), caption: '🤠 *WANTED*' }, { quoted: m })
+    await NXL.sendMessage(m.chat, { react: { text: "✅", key: m.key } })
+  } catch (e) {
+    await NXL.sendMessage(m.chat, { react: { text: "❌", key: m.key } })
+    m.reply(`❌ Gagal: ${e?.message || e}`)
+  }
+}
+break
+
+// [END BATCH 3]
+
 if (budy.startsWith('=>')) {
 if (!isCreator) return
 function Return(sul) {
