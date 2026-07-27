@@ -9457,9 +9457,10 @@ case 'boost': {
     // Bersihkan juga cache yang tidak perlu di memory
     if (global._menuMediaCache) { global._menuMediaCache = null }
     if (global.gambar1Cache) { global.gambar1Cache = null }
-    m.reply(`✅ *Boost selesai!*\n\n🗑️ File tmp dihapus: *${tmpCount}*\n🧹 Memory cache dibersihkan\n\n_Bot lebih ringan sekarang_`)
+    // Tidak kirim pesan ke WhatsApp — hanya log di panel server
+    console.log(`[BOOST] Selesai. Tmp: ${tmpCount} file dihapus, cache cleared.`)
   } catch (e) {
-    m.reply(`❌ Gagal: ${e.message}`)
+    console.log(`[BOOST] Error: ${e.message}`)
   }
 }
 break
