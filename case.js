@@ -1262,7 +1262,30 @@ if (!isCmd && hasContent && !m.key.fromMe && global.db?.users?.[m.sender]?.NXL !
       }, { quoted: m })
       fs.unlinkSync(filePath)
     } else {
-      m.reply(response)
+      // [AI VOICE MODE] Jika aiVoiceMode aktif, kirim jawaban sebagai voice note
+      if (global.aiVoiceMode) {
+        try {
+          const crypto = require('crypto')
+          const _ttsBaseUrl = 'https://app-tts.voiser.ai'
+          const _ttsSessionId = crypto.randomBytes(16).toString('hex')
+          const _ttsVoice = global.aiVoiceModel || '173' // default: Gadis
+          const _ttsText = response.slice(0, 2000) // limit 2000 char untuk TTS
+          const _ttsRes = await axios.post(`${_ttsBaseUrl}/tts`, {
+            service: 'voiser', language: 'id-ID', voice: _ttsVoice,
+            text: _ttsText, sessionId: _ttsSessionId, ssml: false
+          }, { timeout: 30000 })
+          const _ttsUrl = _ttsRes.data?.url || _ttsRes.data?.result?.url || _ttsRes.data?.audioUrl
+          if (_ttsUrl) {
+            await NXL.sendMessage(from, { audio: { url: _ttsUrl }, mimetype: 'audio/mpeg', ptt: true }, { quoted: m })
+          } else {
+            m.reply(response) // fallback ke teks jika TTS gagal
+          }
+        } catch {
+          m.reply(response) // fallback ke teks jika TTS error
+        }
+      } else {
+        m.reply(response)
+      }
     }
 
   } catch (err) {
@@ -10075,6 +10098,34 @@ case 'wanted': {
 break
 
 // [END BATCH 3]
+
+case 'aivn':
+case 'aivoice': {
+  if (!isCreator) return m.reply(mess.owner)
+  const sub = args[0]?.toLowerCase()
+  const voiceModels = { 'gadis': '173', 'ardi': '174', 'siti': '404', 'dimas': '405', 'tuti': '488', 'jajang': '489' }
+
+  if (sub === 'on') {
+    global.aiVoiceMode = true
+    const modelName = Object.keys(voiceModels).find(k => voiceModels[k] === (global.aiVoiceModel || '173')) || 'gadis'
+    return m.reply(`✅ *AI Voice Mode AKTIF*\n\nBot akan menjawab dengan voice note (VN)\nModel suara: *${modelName}*\n\nGanti model: .aivn model [nama]\nModel: Gadis, Ardi, Siti, Dimas, Tuti, Jajang`)
+  }
+  if (sub === 'off') {
+    global.aiVoiceMode = false
+    return m.reply(`❌ *AI Voice Mode NONAKTIF*\n\nBot kembali menjawab dengan teks biasa.`)
+  }
+  if (sub === 'model' && args[1]) {
+    const modelName = args[1].toLowerCase()
+    if (!voiceModels[modelName]) return m.reply(`❌ Model tidak ditemukan!\n\nModel tersedia: ${Object.keys(voiceModels).join(', ')}`)
+    global.aiVoiceModel = voiceModels[modelName]
+    return m.reply(`✅ Model suara AI diubah ke: *${modelName}*`)
+  }
+
+  const status = global.aiVoiceMode ? '🟢 ON' : '🔴 OFF'
+  const currentModel = Object.keys(voiceModels).find(k => voiceModels[k] === (global.aiVoiceModel || '173')) || 'gadis'
+  m.reply(`🎙️ *AI VOICE MODE*\n\nStatus: ${status}\nModel: *${currentModel}*\n\n*.aivn on* — Aktifkan (AI jawab pakai VN)\n*.aivn off* — Nonaktifkan (AI jawab pakai teks)\n*.aivn model [nama]* — Ganti model suara\n\nModel: Gadis, Ardi, Siti, Dimas, Tuti, Jajang`)
+}
+break
 
 if (budy.startsWith('=>')) {
 if (!isCreator) return
