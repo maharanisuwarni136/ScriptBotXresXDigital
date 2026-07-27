@@ -9444,24 +9444,16 @@ default:
 
 case 'clearsession':
 case 'boost': {
-  if (!isCreator) return m.reply(mess.owner)
+  if (!isCreator) return
   try {
     const tmpDir = './Tmp'
-    let tmpCount = 0
-    // Hanya bersihkan Tmp/ (file sementara download/sticker)
-    // JANGAN hapus session/ saat bot running — Baileys akan recreate dan menyebabkan spam
     if (fs.existsSync(tmpDir)) {
       const files = fs.readdirSync(tmpDir)
-      for (const f of files) { try { fs.unlinkSync(`${tmpDir}/${f}`); tmpCount++ } catch {} }
+      for (const f of files) { try { fs.unlinkSync(`${tmpDir}/${f}`) } catch {} }
     }
-    // Bersihkan juga cache yang tidak perlu di memory
     if (global._menuMediaCache) { global._menuMediaCache = null }
     if (global.gambar1Cache) { global.gambar1Cache = null }
-    // Tidak kirim pesan ke WhatsApp — hanya log di panel server
-    console.log(`[BOOST] Selesai. Tmp: ${tmpCount} file dihapus, cache cleared.`)
-  } catch (e) {
-    console.log(`[BOOST] Error: ${e.message}`)
-  }
+  } catch {}
 }
 break
 
