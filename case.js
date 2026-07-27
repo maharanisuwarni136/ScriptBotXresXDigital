@@ -9676,6 +9676,245 @@ break
 
 // [END BATCH 1]
 
+// ============================================================================
+// [BATCH 2] — Foto Editor, Fun, Islami, Primbon, Cecan
+// ============================================================================
+
+case 'toanime':
+case 'toghibli':
+case 'jadidisney':
+case 'jadigta':
+case 'tochibi':
+case 'tobotak':
+case 'tomonyet':
+case 'cartoonstyle': {
+  if (!(/image/.test(mime))) return m.reply(`Kirim/reply gambar dengan caption .${command}`)
+  try {
+    await NXL.sendMessage(m.chat, { react: { text: "⏳", key: m.key } })
+    const mediaBuffer = m.quoted ? await m.quoted.download() : await m.download()
+    const FormData = require('form-data')
+    const form = new FormData()
+    form.append('image', mediaBuffer, { filename: 'image.jpg' })
+    const uploadRes = await axios.post('https://api.imgbb.com/1/upload?key=849bd793e2106ab250ec9f0956e85cbe', form, { headers: form.getHeaders() })
+    const imgUrl = uploadRes.data?.data?.url
+    if (!imgUrl) throw new Error('Gagal upload gambar')
+    const styleMap = { toanime:'anime', toghibli:'ghibli', jadidisney:'disney', jadigta:'gta5', tochibi:'chibi', tobotak:'botak', tomonyet:'monyet', cartoonstyle:'cartoon' }
+    const style = styleMap[command] || 'anime'
+    const res = await axios.get(`https://api.siputzx.my.id/api/tools/styleimage?url=${encodeURIComponent(imgUrl)}&style=${style}`, { responseType: 'arraybuffer', timeout: 60000 })
+    await NXL.sendMessage(m.chat, { image: Buffer.from(res.data), caption: `✅ *${command}* berhasil!` }, { quoted: m })
+    await NXL.sendMessage(m.chat, { react: { text: "✅", key: m.key } })
+  } catch (e) {
+    await NXL.sendMessage(m.chat, { react: { text: "❌", key: m.key } })
+    m.reply(`❌ Gagal: ${e?.message || e}`)
+  }
+}
+break
+
+case 'removeobj':
+case 'removeobject':
+case 'hapusobjek': {
+  if (!(/image/.test(mime))) return m.reply(`Kirim/reply gambar dengan caption .${command}\nGambar harus sudah di-mark area yang ingin dihapus`)
+  try {
+    await NXL.sendMessage(m.chat, { react: { text: "⏳", key: m.key } })
+    const mediaBuffer = m.quoted ? await m.quoted.download() : await m.download()
+    const FormData = require('form-data')
+    const form = new FormData()
+    form.append('image', mediaBuffer, { filename: 'image.jpg' })
+    const uploadRes = await axios.post('https://api.imgbb.com/1/upload?key=849bd793e2106ab250ec9f0956e85cbe', form, { headers: form.getHeaders() })
+    const imgUrl = uploadRes.data?.data?.url
+    if (!imgUrl) throw new Error('Gagal upload')
+    const res = await axios.get(`https://api.siputzx.my.id/api/tools/removeobj?url=${encodeURIComponent(imgUrl)}`, { responseType: 'arraybuffer', timeout: 60000 })
+    await NXL.sendMessage(m.chat, { image: Buffer.from(res.data), caption: '✅ Objek berhasil dihapus!' }, { quoted: m })
+    await NXL.sendMessage(m.chat, { react: { text: "✅", key: m.key } })
+  } catch (e) {
+    await NXL.sendMessage(m.chat, { react: { text: "❌", key: m.key } })
+    m.reply(`❌ Gagal: ${e?.message || e}`)
+  }
+}
+break
+
+case 'removewm':
+case 'hapuswm': {
+  if (!(/image/.test(mime))) return m.reply(`Kirim/reply gambar yang ada watermark dengan caption .${command}`)
+  try {
+    await NXL.sendMessage(m.chat, { react: { text: "⏳", key: m.key } })
+    const mediaBuffer = m.quoted ? await m.quoted.download() : await m.download()
+    const FormData = require('form-data')
+    const form = new FormData()
+    form.append('image', mediaBuffer, { filename: 'image.jpg' })
+    const uploadRes = await axios.post('https://api.imgbb.com/1/upload?key=849bd793e2106ab250ec9f0956e85cbe', form, { headers: form.getHeaders() })
+    const imgUrl = uploadRes.data?.data?.url
+    if (!imgUrl) throw new Error('Gagal upload')
+    const res = await axios.get(`https://api.siputzx.my.id/api/tools/removewm?url=${encodeURIComponent(imgUrl)}`, { responseType: 'arraybuffer', timeout: 60000 })
+    await NXL.sendMessage(m.chat, { image: Buffer.from(res.data), caption: '✅ Watermark berhasil dihapus!' }, { quoted: m })
+    await NXL.sendMessage(m.chat, { react: { text: "✅", key: m.key } })
+  } catch (e) {
+    await NXL.sendMessage(m.chat, { react: { text: "❌", key: m.key } })
+    m.reply(`❌ Gagal: ${e?.message || e}`)
+  }
+}
+break
+
+case 'cecan':
+case 'cecankorea':
+case 'cecanjapan':
+case 'cecanindonesia':
+case 'cecanchina':
+case 'cecanhijaber':
+case 'cecanthailand':
+case 'cecanvietnam':
+case 'cecanmalaysia':
+case 'cogan': {
+  try {
+    await NXL.sendMessage(m.chat, { react: { text: "🔎", key: m.key } })
+    const kategori = command.replace('cecan', '').replace('cogan', 'cogan') || 'random'
+    const queries = { random:'beautiful asian girl selfie', korea:'korean girl kpop', japan:'japanese girl kawaii', indonesia:'indonesian girl hijab', china:'chinese girl pretty', hijaber:'hijab girl aesthetic', thailand:'thai girl cute', vietnam:'vietnamese girl', malaysia:'malaysian girl', cogan:'handsome asian boy' }
+    const q = queries[kategori] || queries.random
+    const res = await pinterest(q)
+    if (!res || !res.length) return m.reply('❌ Gambar tidak ditemukan')
+    const pick = res[Math.floor(Math.random() * res.length)]
+    await NXL.sendMessage(m.chat, { image: { url: pick }, caption: `📸 *${command}*` }, { quoted: m })
+    await NXL.sendMessage(m.chat, { react: { text: "✅", key: m.key } })
+  } catch (e) {
+    await NXL.sendMessage(m.chat, { react: { text: "❌", key: m.key } })
+    m.reply(`❌ Gagal: ${e?.message || e}`)
+  }
+}
+break
+
+case 'apakah': {
+  if (!text) return m.reply(`*Contoh:* .${command} aku ganteng`)
+  const jawaban = ['Iya dong 😎','Tentu saja! ✅','Pasti banget 💯','Sangat! 🔥','Tidak 😅','Tidak mungkin ❌','Mustahil 💀','Bisa jadi 🤔','Coba tanya lagi nanti 🔄','Mungkin iya mungkin tidak 🎲','Sepertinya iya 👀','Kayaknya enggak deh 😬']
+  m.reply(`🤔 *Pertanyaan:* ${text}\n\n🎱 *Jawaban:* ${jawaban[Math.floor(Math.random()*jawaban.length)]}`)
+}
+break
+
+case 'kapan': {
+  if (!text) return m.reply(`*Contoh:* .${command} aku nikah`)
+  const jawaban = ['Besok 😱','Minggu depan 📅','Bulan depan 🗓️','Tahun depan 📆','10 tahun lagi 💀','Lusa 🤞','Nanti sore 🌅','Tunggu gajian dulu 💸','Tidak akan pernah 😭','Secepatnya insyaallah 🤲','3 hari lagi 🎯','Pas kamu udah siap 💪','Setelah kiamat 🔥']
+  m.reply(`🤔 *Pertanyaan:* Kapan ${text}?\n\n⏰ *Jawaban:* ${jawaban[Math.floor(Math.random()*jawaban.length)]}`)
+}
+break
+
+case 'zodiak': {
+  if (!text) return m.reply(`*Contoh:* .${command} pisces\n\n*Daftar:* aries, taurus, gemini, cancer, leo, virgo, libra, scorpio, sagittarius, capricorn, aquarius, pisces`)
+  try {
+    await NXL.sendMessage(m.chat, { react: { text: "⏳", key: m.key } })
+    const res = await axios.get(`https://api.siputzx.my.id/api/primbon/zodiak?zodiak=${encodeURIComponent(text)}`)
+    const z = res.data?.data
+    if (!z) return m.reply('❌ Zodiak tidak ditemukan')
+    m.reply(`♈ *ZODIAK ${text.toUpperCase()}*\n\n✨ Zodiak: ${z.zodiak || text}\n🔢 Nomor Keberuntungan: ${z.nomor_keberuntungan || '-'}\n🪐 Planet: ${z.planet_yang_mengitari || '-'}\n🌼 Bunga: ${z.bunga_keberuntungan || '-'}\n🎨 Warna: ${z.warna_keberuntungan || '-'}\n💎 Batu: ${z.batu_keberuntungan || '-'}\n\n📝 *Deskripsi:*\n${z.deskripsi || z.desc || '-'}`)
+    await NXL.sendMessage(m.chat, { react: { text: "✅", key: m.key } })
+  } catch (e) {
+    await NXL.sendMessage(m.chat, { react: { text: "❌", key: m.key } })
+    m.reply(`❌ Gagal: ${e?.message || e}`)
+  }
+}
+break
+
+case 'ramalannasib':
+case 'nasib': {
+  if (!text) return m.reply(`*Contoh:* .${command} nama lengkap`)
+  try {
+    const res = await axios.get(`https://api.siputzx.my.id/api/primbon/nasib?nama=${encodeURIComponent(text)}`)
+    const d = res.data?.data || res.data?.result
+    if (!d) return m.reply('❌ Gagal meramal')
+    m.reply(`🔮 *Ramalan Nasib*\n\n👤 Nama: ${text}\n\n${d.hasil || d.ramalan || JSON.stringify(d)}`)
+  } catch (e) { m.reply(`❌ Gagal: ${e?.message || e}`) }
+}
+break
+
+case 'ramalanjodoh':
+case 'jodoh': {
+  if (!text || !text.includes('&')) return m.reply(`*Contoh:* .${command} nama1 & nama2`)
+  const names = text.split('&').map(n => n.trim())
+  if (names.length < 2) return m.reply(`*Contoh:* .${command} Andi & Siti`)
+  try {
+    const res = await axios.get(`https://api.siputzx.my.id/api/primbon/jodoh?nama1=${encodeURIComponent(names[0])}&nama2=${encodeURIComponent(names[1])}`)
+    const d = res.data?.data || res.data?.result
+    if (!d) return m.reply('❌ Gagal meramal')
+    m.reply(`💕 *Ramalan Jodoh*\n\n👤 ${names[0]} 💘 ${names[1]}\n\n${d.hasil || d.ramalan || d.description || JSON.stringify(d)}`)
+  } catch (e) { m.reply(`❌ Gagal: ${e?.message || e}`) }
+}
+break
+
+case 'nomerhoki':
+case 'nohoki': {
+  if (!text) return m.reply(`*Contoh:* .${command} 08123456789`)
+  try {
+    const res = await axios.get(`https://api.siputzx.my.id/api/primbon/nomorhoki?nomor=${encodeURIComponent(text.replace(/[^0-9]/g,''))}`)
+    const d = res.data?.data || res.data?.result
+    if (!d) return m.reply('❌ Gagal cek')
+    m.reply(`🔢 *Cek Nomor Hoki*\n\n📱 Nomor: ${text}\n\n${d.hasil || d.angka_kekuatan || JSON.stringify(d)}`)
+  } catch (e) { m.reply(`❌ Gagal: ${e?.message || e}`) }
+}
+break
+
+case 'cocoknama': {
+  if (!text || !text.includes('&')) return m.reply(`*Contoh:* .${command} nama1 & nama2`)
+  const names = text.split('&').map(n => n.trim())
+  if (names.length < 2) return m.reply(`*Contoh:* .${command} Andi & Siti`)
+  try {
+    const res = await axios.get(`https://api.siputzx.my.id/api/primbon/cocoknama?nama1=${encodeURIComponent(names[0])}&nama2=${encodeURIComponent(names[1])}`)
+    const d = res.data?.data || res.data?.result
+    if (!d) return m.reply('❌ Gagal')
+    m.reply(`💑 *Kecocokan Nama*\n\n👤 ${names[0]} 💕 ${names[1]}\n\n${d.hasil || d.description || JSON.stringify(d)}`)
+  } catch (e) { m.reply(`❌ Gagal: ${e?.message || e}`) }
+}
+break
+
+case 'ayatkursi': {
+  m.reply(`📖 *AYAT KURSI*\n\nاللّٰهُ لَآ اِلٰهَ اِلَّا هُوَۚ اَلْحَيُّ الْقَيُّوْمُۚ لَا تَأْخُذُهٗ سِنَةٌ وَّلَا نَوْمٌۗ لَهٗ مَا فِى السَّمٰوٰتِ وَمَا فِى الْاَرْضِۗ مَنْ ذَا الَّذِيْ يَشْفَعُ عِنْدَهٗٓ اِلَّا بِاِذْنِهٗۗ يَعْلَمُ مَا بَيْنَ اَيْدِيْهِمْ وَمَا خَلْفَهُمْۗ وَلَا يُحِيْطُوْنَ بِشَيْءٍ مِّنْ عِلْمِهٗٓ اِلَّا بِمَا شَاۤءَۚ وَسِعَ كُرْسِيُّهُ السَّمٰوٰتِ وَالْاَرْضَۚ وَلَا يَـُٔوْدُهٗ حِفْظُهُمَاۚ وَهُوَ الْعَلِيُّ الْعَظِيْمُ\n\n_Al-Baqarah (2:255)_\n\n*Artinya:* Allah, tidak ada tuhan selain Dia, Yang Mahahidup, Yang terus-menerus mengurus (makhluk-Nya). Dia tidak mengantuk dan tidak tidur. Milik-Nya apa yang ada di langit dan apa yang ada di bumi...`)
+}
+break
+
+case 'doaharian': {
+  const doaList = [{n:'Doa Bangun Tidur',a:'Alhamdulillaahil ladzii ahyaanaa ba\'da maa amaatanaa wa ilaihin nusyuur',t:'Segala puji bagi Allah yang telah menghidupkan kami setelah mematikan kami, dan hanya kepada-Nya kami dikembalikan.'},{n:'Doa Sebelum Makan',a:'Allaahumma baarik lanaa fiimaa razaqtanaa wa qinaa \'adzaaban naar',t:'Ya Allah, berkahilah kami dalam rezeki yang Engkau berikan dan lindungilah kami dari siksa api neraka.'},{n:'Doa Sesudah Makan',a:'Alhamdulillaahil ladzii ath\'amanaa wa saqaanaa wa ja\'alanaa minal muslimiin',t:'Segala puji bagi Allah yang telah memberi kami makan dan minum, serta menjadikan kami termasuk orang-orang Muslim.'},{n:'Doa Keluar Rumah',a:'Bismillaahi tawakkaltu \'alallaahi laa hawla wa laa quwwata illaa billaah',t:'Dengan nama Allah, aku bertawakkal kepada Allah, tiada daya dan kekuatan kecuali dengan pertolongan Allah.'},{n:'Doa Masuk Masjid',a:'Allaahummaf tahlii abwaaba rahmatik',t:'Ya Allah, bukakanlah untukku pintu-pintu rahmat-Mu.'},{n:'Doa Sebelum Tidur',a:'Bismikallaahumma ahyaa wa amuut',t:'Dengan nama-Mu ya Allah aku hidup dan aku mati.'}]
+  const pick = doaList[Math.floor(Math.random()*doaList.length)]
+  m.reply(`🤲 *${pick.n}*\n\n${pick.a}\n\n*Artinya:* ${pick.t}`)
+}
+break
+
+case 'hadits': {
+  const haditsList = [{r:'Bukhari',h:'Sesungguhnya setiap amalan bergantung pada niatnya.'},{r:'Muslim',h:'Barangsiapa yang menunjuki kepada kebaikan maka dia akan mendapatkan pahala seperti pahala orang yang mengerjakannya.'},{r:'Tirmidzi',h:'Senyummu di hadapan saudaramu adalah sedekah.'},{r:'Bukhari',h:'Orang yang paling baik di antara kalian adalah yang paling baik akhlaknya.'},{r:'Muslim',h:'Kebersihan adalah sebagian dari iman.'},{r:'Bukhari Muslim',h:'Sebaik-baik manusia adalah yang paling bermanfaat bagi manusia lainnya.'},{r:'Tirmidzi',h:'Orang beriman tidak akan disengat dari lubang yang sama dua kali.'},{r:'Bukhari',h:'Barangsiapa yang beriman kepada Allah dan hari akhir, hendaklah ia berkata baik atau diam.'},{r:'Muslim',h:'Jauhilah dusta, karena dusta membawa kepada kejahatan.'},{r:'Bukhari',h:'Surga berada di bawah telapak kaki ibu.'}]
+  const pick = haditsList[Math.floor(Math.random()*haditsList.length)]
+  m.reply(`📜 *HADITS*\n\n"${pick.h}"\n\n— HR. ${pick.r}`)
+}
+break
+
+case 'asmaulhusna': {
+  const asma = ['Ar-Rahman (Yang Maha Pengasih)','Ar-Rahim (Yang Maha Penyayang)','Al-Malik (Yang Maha Raja)','Al-Quddus (Yang Maha Suci)','As-Salam (Yang Maha Memberi Keselamatan)','Al-Mu\'min (Yang Maha Memberi Keamanan)','Al-Muhaymin (Yang Maha Memelihara)','Al-Aziz (Yang Maha Perkasa)','Al-Jabbar (Yang Maha Perkasa)','Al-Mutakabbir (Yang Maha Besar)','Al-Khaliq (Yang Maha Pencipta)','Al-Bari (Yang Maha Mengadakan)','Al-Musawwir (Yang Maha Membentuk)','Al-Ghaffar (Yang Maha Pengampun)','Al-Qahhar (Yang Maha Memaksa)']
+  const pick = asma[Math.floor(Math.random()*asma.length)]
+  m.reply(`☪️ *Asmaul Husna*\n\n${pick}\n\n_99 Nama Allah Yang Indah_`)
+}
+break
+
+case 'whatmusic':
+case 'whatmusik': {
+  if (!(/audio|video/.test(mime))) return m.reply(`Kirim/reply audio atau video dengan caption .${command}`)
+  try {
+    await NXL.sendMessage(m.chat, { react: { text: "🎵", key: m.key } })
+    const mediaBuffer = m.quoted ? await m.quoted.download() : await m.download()
+    const FormData = require('form-data')
+    const form = new FormData()
+    form.append('file', mediaBuffer, { filename: 'audio.mp3' })
+    const uploadRes = await axios.post('https://uguu.se/upload', form, { headers: form.getHeaders() })
+    const fileUrl = uploadRes.data?.files?.[0]?.url
+    if (!fileUrl) throw new Error('Gagal upload')
+    const res = await axios.get(`https://api.nexray.eu.cc/tools/whatsmusic?url=${encodeURIComponent(fileUrl)}`, { timeout: 30000 })
+    const d = res.data?.data || res.data?.result
+    if (!d || !d.title) return m.reply('❌ Lagu tidak terdeteksi')
+    m.reply(`🎵 *Lagu Terdeteksi!*\n\n🎶 Judul: *${d.title}*\n🎤 Artis: *${d.artist || '-'}*\n💿 Album: ${d.album || '-'}\n⏱️ Durasi: ${d.duration || '-'}`)
+    await NXL.sendMessage(m.chat, { react: { text: "✅", key: m.key } })
+  } catch (e) {
+    await NXL.sendMessage(m.chat, { react: { text: "❌", key: m.key } })
+    m.reply(`❌ Gagal identifikasi: ${e?.message || e}`)
+  }
+}
+break
+
+// [END BATCH 2]
+
 if (budy.startsWith('=>')) {
 if (!isCreator) return
 function Return(sul) {
