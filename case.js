@@ -678,9 +678,9 @@ const getPPorangnya = async () => {
 const reply = (teks) => {
 // [FIX CONTEXT-LEAK] Snapshot 'from' sudah diambil saat command mulai (closure).
 // Gunakan socket hidup; log error alih-alih swallow.
-// [FIX LID] from sudah di-resolve dari m.chat, tapi tambah safety check
 const _c = (typeof global.getLiveConn === 'function' && global.getLiveConn()) || NXL
-const _target = (from && from.endsWith('@lid')) ? m.sender : from
+// Gunakan from (m.chat resolved). Jika masih @lid, pakai remoteJid asli.
+const _target = (from && !from.endsWith('@lid')) ? from : (m.key?.remoteJid || from)
 return _c.sendMessage(_target, { text : teks }, {quoted:m}).catch(err => {
   console.error('[REPLY ERROR]', _target, err?.message || err)
 })
