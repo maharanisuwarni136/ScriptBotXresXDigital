@@ -2182,6 +2182,27 @@ let listMessage = { title: 'List Menu', sections }
   ╰◙
   ╭◙  *Tools Menu*
   ┆• .bikincard
+  ┆• .clearsession
+  ┆• .readmore
+  ┆• .shortlink
+  ┆• .carbon
+  ┆• .ocr
+  ┆• .aitts
+  ┆• .confes
+  ┆• .caristicker
+  ┆• .aio
+  ╰◙
+  ╭◙  *Download Menu*
+  ┆• .spotify
+  ┆• .mediafire
+  ╰◙
+  ╭◙  *Fun Baru*
+  ┆• .truth
+  ┆• .dare
+  ┆• .darkjoke
+  ┆• .pantun
+  ┆• .fakecall
+  ┆• .fakedana
   ╰◙
   ╭◙  *Fun Menu*
   ┆• .artinama
@@ -9394,6 +9415,267 @@ case 'searchcode': {
 }
 break
 default:
+// ============================================================================
+// [BATCH FITUR BARU] — Dikonversi dari Alip AI V14
+// ============================================================================
+
+case 'clearsession':
+case 'boost': {
+  if (!isCreator) return m.reply(mess.owner)
+  try {
+    const sessionDir = './session'
+    const tmpDir = './Tmp'
+    let sessionCount = 0, tmpCount = 0
+    if (fs.existsSync(sessionDir)) {
+      const files = fs.readdirSync(sessionDir).filter(f => f !== 'creds.json')
+      for (const f of files) { try { fs.unlinkSync(`${sessionDir}/${f}`); sessionCount++ } catch {} }
+    }
+    if (fs.existsSync(tmpDir)) {
+      const files = fs.readdirSync(tmpDir)
+      for (const f of files) { try { fs.unlinkSync(`${tmpDir}/${f}`); tmpCount++ } catch {} }
+    }
+    m.reply(`✅ *Berhasil membersihkan sampah!*\n\n📁 Session: *${sessionCount}* file dihapus\n🗑️ Tmp: *${tmpCount}* file dihapus\n\n_Bot lebih ringan sekarang_`)
+  } catch (e) {
+    m.reply(`❌ Gagal: ${e.message}`)
+  }
+}
+break
+
+case 'aitts':
+case 'ttsai': {
+  if (!text) return m.reply(`*Contoh:* .${command} halo apa kabar\n\n*Dengan model:* .${command} Gadis | halo apa kabar\n\n*Model tersedia:*\nGadis, Ardi, Siti, Dimas, Tuti, Jajang`)
+  try {
+    await NXL.sendMessage(m.chat, { react: { text: "⏳", key: m.key } })
+    const voices = { 'gadis': '173', 'ardi': '174', 'siti': '404', 'dimas': '405', 'tuti': '488', 'jajang': '489' }
+    let model = 'gadis', inputText = text
+    if (text.includes('|')) {
+      const parts = text.split('|').map(s => s.trim())
+      model = parts[0].toLowerCase()
+      inputText = parts.slice(1).join('|')
+    }
+    const voiceId = voices[model] || '173'
+    const crypto = require('crypto')
+    const baseUrl = 'https://app-tts.voiser.ai'
+    const sessionId = crypto.randomBytes(16).toString('hex')
+    const generateRes = await axios.post(`${baseUrl}/tts`, {
+      service: 'voiser', language: 'id-ID', voice: voiceId,
+      text: inputText, sessionId, ssml: false
+    }, { timeout: 30000 })
+    const audioUrl = generateRes.data?.url || generateRes.data?.result?.url || generateRes.data?.audioUrl
+    if (!audioUrl) return m.reply('❌ Gagal generate audio')
+    await NXL.sendMessage(m.chat, { audio: { url: audioUrl }, mimetype: 'audio/mpeg', ptt: true }, { quoted: m })
+    await NXL.sendMessage(m.chat, { react: { text: "✅", key: m.key } })
+  } catch (e) {
+    await NXL.sendMessage(m.chat, { react: { text: "❌", key: m.key } })
+    m.reply(`❌ Gagal TTS: ${e?.message || e}`)
+  }
+}
+break
+
+case 'ocr': {
+  if (!(/image/.test(mime))) return m.reply(`Kirim/reply gambar dengan caption .${command}`)
+  try {
+    await NXL.sendMessage(m.chat, { react: { text: "⏳", key: m.key } })
+    const mediaBuffer = m.quoted ? await m.quoted.download() : await m.download()
+    const FormData = require('form-data')
+    const form = new FormData()
+    form.append('image', mediaBuffer, { filename: 'image.jpg' })
+    const res = await axios.post('https://api.imgbb.com/1/upload?key=849bd793e2106ab250ec9f0956e85cbe', form, { headers: form.getHeaders() })
+    const imgUrl = res.data?.data?.url
+    if (!imgUrl) return m.reply('❌ Gagal upload gambar')
+    const ocrRes = await axios.get(`https://api.siputzx.my.id/api/tools/ocr?url=${encodeURIComponent(imgUrl)}`)
+    const result = ocrRes.data?.data?.text || ocrRes.data?.result || ocrRes.data?.text
+    if (!result) return m.reply('❌ Tidak ada teks yang terdeteksi')
+    await NXL.sendMessage(m.chat, { react: { text: "✅", key: m.key } })
+    m.reply(`📝 *Hasil OCR:*\n\n${result}`)
+  } catch (e) {
+    await NXL.sendMessage(m.chat, { react: { text: "❌", key: m.key } })
+    m.reply(`❌ Gagal OCR: ${e?.message || e}`)
+  }
+}
+break
+
+case 'readmore': {
+  if (!text || !text.includes('|')) return m.reply(`*Contoh:* .${command} teks awal | teks tersembunyi`)
+  const parts = text.split('|')
+  const result = `${parts[0].trim()}${'\u200e'.repeat(4000)}\n${parts.slice(1).join('|').trim()}`
+  m.reply(result)
+}
+break
+
+case 'shortlink': {
+  if (!text) return m.reply(`*Contoh:* .${command} https://example.com`)
+  if (!isUrl(text)) return m.reply('❌ URL tidak valid!')
+  try {
+    const res = await axios.get('https://tinyurl.com/api-create.php?url=' + encodeURIComponent(text))
+    m.reply(`🔗 *Short Link:*\n\n${res.data}`)
+  } catch (e) {
+    m.reply(`❌ Gagal: ${e?.message || e}`)
+  }
+}
+break
+
+case 'carbon': {
+  if (!text) return m.reply(`*Contoh:* .${command} console.log("hello world")`)
+  try {
+    await NXL.sendMessage(m.chat, { react: { text: "⏳", key: m.key } })
+    const res = await axios.get(`https://api.siputzx.my.id/api/tools/carbon?code=${encodeURIComponent(text)}`, { responseType: 'arraybuffer' })
+    await NXL.sendMessage(m.chat, { image: Buffer.from(res.data), caption: '💻 *Carbon Code*' }, { quoted: m })
+    await NXL.sendMessage(m.chat, { react: { text: "✅", key: m.key } })
+  } catch (e) {
+    await NXL.sendMessage(m.chat, { react: { text: "❌", key: m.key } })
+    m.reply(`❌ Gagal: ${e?.message || e}`)
+  }
+}
+break
+
+case 'truth': {
+  const truths = ['Apa rahasia terbesarmu?','Siapa crush pertamamu?','Pernah bohong ke siapa terakhir?','Hal paling memalukan yang pernah kamu lakukan?','Apa yang paling kamu takuti?','Pernah curi-curi baca chat orang?','Siapa orang yang paling kamu benci?','Apa kebiasaan anehmu?','Pernah nangis karena hal sepele?','Apa impian terpendam yang belum pernah kamu ceritakan?','Siapa mantan yang paling kamu rindukan?','Hal apa yang kamu sesali seumur hidup?','Pernah suka sama teman sendiri?','Apa yang kamu lakukan tengah malam sendirian?','Siapa yang diam-diam kamu stalk di sosmed?']
+  m.reply(`🎯 *TRUTH*\n\n${truths[Math.floor(Math.random()*truths.length)]}`)
+}
+break
+
+case 'dare': {
+  const dares = ['Kirim chat "aku kangen" ke kontak terakhir!','Ganti foto profil jadi foto jelek selama 1 jam!','Voice note nyanyi lagu dangdut!','Tulis status WA "Aku jomblo dan butuh pacar"!','Telpon kontak random dan bilang "aku sayang kamu"!','Kirim foto selfie tanpa filter ke grup!','Chat mantan bilang "masih sayang ga?"','Ganti nama WA jadi "Si Paling Ganteng/Cantik"','Kirim voice note ketawa 10 detik','Story WA joget 5 detik','Chat guru/dosen bilang "I love you"','Kirim foto kaki ke grup','Nyanyi lagu anak-anak di voice note','Pura-pura salah kirim chat romantis ke grup','Ganti bio WA jadi "Dicari: Pacar Setia"']
+  m.reply(`🎲 *DARE*\n\n${dares[Math.floor(Math.random()*dares.length)]}`)
+}
+break
+
+case 'darkjoke': {
+  const jokes = ['Kenapa hantu ga punya pacar? Karena suka ghosting.','Apa bedanya kamu sama wifi? Wifi masih ada yang nyari.','Guru: "Sebutkan contoh pemborosan!" Murid: "Chat panjang tapi cuma dibaca doang."','Kenapa kuburan tenang? Karena penghuninya ga ada yang bucin.','Apa persamaan kamu sama AC? Kalau dinyalain dingin, kalau dimatiin panas.','Kata motivasi hari ini: Jangan menyerah! Kecuali kamu lagi ditodong.','Kenapa matematika sedih? Karena banyak masalah.','Apa beda kamu sama tembok? Tembok masih ada yang sandarin.','Dokter: Anda harus banyak istirahat. Pasien: Saya memang pengangguran dok.','Kenapa zombie ga punya teman? Karena suka makan teman sendiri.']
+  m.reply(`🖤 *Dark Joke*\n\n${jokes[Math.floor(Math.random()*jokes.length)]}`)
+}
+break
+
+case 'pantun': {
+  const pantuns = ['Pergi ke pasar beli mangga,\nMangga manis rasanya enak,\nJangan suka banyak gaya,\nNanti jatuh sakit badan.','Buah rambutan di atas bukit,\nDipetik orang di pagi hari,\nKalau hidup mau selamat,\nJangan lupa banyak berdoa.','Ikan tongkol ikan tenggiri,\nMasak gulai pakai santan,\nJangan malu bertanya sendiri,\nMalu bertanya sesat di jalan.','Burung merpati terbang tinggi,\nHinggap di dahan pohon cemara,\nHidup ini jangan iri,\nRezeki sudah ada yang mengatur.','Ke toko beli obat nyamuk,\nBeli juga minyak telon,\nJangan suka banyak duduk,\nNanti badan jadi melon.','Pohon mangga di tepi jalan,\nBuahnya lebat dimakan orang,\nKalau sayang bilang sayang,\nJangan diam kayak patung.']
+  m.reply(`🎋 *Pantun*\n\n${pantuns[Math.floor(Math.random()*pantuns.length)]}`)
+}
+break
+
+case 'fakecall': {
+  if (!m.isGroup) return m.reply(mess.group)
+  const target = m.quoted ? m.quoted.sender : (m.mentionedJid?.[0] || (text ? text.replace(/[^0-9]/g, '') + '@s.whatsapp.net' : null))
+  if (!target) return m.reply(`*Contoh:* .${command} @tag/reply orang`)
+  try {
+    await NXL.sendMessage(m.chat, { audio: { url: 'https://sfx.productioncrate.com/sounds/phone-ringing-6.mp3' }, mimetype: 'audio/mpeg', ptt: true, contextInfo: { mentionedJid: [target], externalAdReply: { title: '📞 Incoming Call...', body: `@${target.split('@')[0]} is calling...`, sourceUrl: '', mediaType: 1 } } }, { quoted: m })
+  } catch (e) {
+    m.reply(`❌ Gagal: ${e?.message || e}`)
+  }
+}
+break
+
+case 'fakedana': {
+  if (!text) return m.reply(`*Contoh:* .${command} 50000|Rizky|Transfer berhasil`)
+  const parts = text.split('|').map(s => s.trim())
+  const nominal = parts[0] || '50000'
+  const nama = parts[1] || 'User'
+  const pesan = parts[2] || 'Transfer berhasil'
+  const struk = `╔══════════════════╗\n║     💙 *DANA*       ║\n╠══════════════════╣\n║ Status: ✅ Berhasil\n║ Nominal: Rp ${parseInt(nominal).toLocaleString('id-ID')}\n║ Penerima: ${nama}\n║ Waktu: ${new Date().toLocaleString('id-ID', {timeZone:'Asia/Jakarta'})}\n║ Ref: ${Date.now().toString().slice(-8)}\n╠══════════════════╣\n║ ${pesan}\n╚══════════════════╝`
+  m.reply(struk)
+}
+break
+
+case 'confes':
+case 'confess': {
+  if (!text) return m.reply(`*Contoh:* .${command} 6281xxx | isi pesan anonim`)
+  const parts = text.split('|').map(s => s.trim())
+  if (parts.length < 2) return m.reply(`*Format:* .${command} nomor | pesan\n*Contoh:* .${command} 6281234567890 | Hai, aku suka kamu`)
+  let targetNum = parts[0].replace(/[^0-9]/g, '')
+  if (!targetNum.startsWith('62')) targetNum = '62' + targetNum
+  const targetJid = targetNum + '@s.whatsapp.net'
+  const pesanConfes = parts.slice(1).join('|').trim()
+  try {
+    await NXL.sendMessage(targetJid, { text: `💌 *PESAN ANONIM*\n\n${pesanConfes}\n\n_Dikirim secara anonim melalui bot_` })
+    m.reply(`✅ Pesan anonim berhasil dikirim ke ${targetNum}!`)
+  } catch (e) {
+    m.reply(`❌ Gagal mengirim: ${e?.message || e}`)
+  }
+}
+break
+
+case 'caristicker':
+case 'searchsticker': {
+  if (!text) return m.reply(`*Contoh:* .${command} kucing lucu`)
+  try {
+    await NXL.sendMessage(m.chat, { react: { text: "🔎", key: m.key } })
+    const res = await axios.get(`https://api.siputzx.my.id/api/s/sticker?query=${encodeURIComponent(text)}`)
+    const stickers = res.data?.data || res.data?.result || []
+    if (!stickers.length) return m.reply('❌ Stiker tidak ditemukan')
+    const pick = stickers[Math.floor(Math.random() * stickers.length)]
+    const stickerUrl = pick.url || pick.sticker || pick
+    await NXL.sendImageAsSticker(m.chat, stickerUrl, m, { packname: global.packname, author: global.author })
+    await NXL.sendMessage(m.chat, { react: { text: "✅", key: m.key } })
+  } catch (e) {
+    await NXL.sendMessage(m.chat, { react: { text: "❌", key: m.key } })
+    m.reply(`❌ Gagal: ${e?.message || e}`)
+  }
+}
+break
+
+case 'aio':
+case 'allinone': {
+  if (!text) return m.reply(`*Contoh:* .${command} https://link_video_apapun\n\nSupport: TikTok, Instagram, Facebook, Twitter, YouTube, dll`)
+  if (!isUrl(text)) return m.reply('❌ URL tidak valid!')
+  try {
+    await NXL.sendMessage(m.chat, { react: { text: "⏳", key: m.key } })
+    const res = await axios.get(`https://api.siputzx.my.id/api/d/aio?url=${encodeURIComponent(text)}`)
+    const data = res.data?.data || res.data?.result
+    if (!data) return m.reply('❌ Gagal mengambil media')
+    if (data.video || data.url) {
+      await NXL.sendMessage(m.chat, { video: { url: data.video || data.url }, caption: data.title || '' }, { quoted: m })
+    } else if (data.audio) {
+      await NXL.sendMessage(m.chat, { audio: { url: data.audio }, mimetype: 'audio/mpeg' }, { quoted: m })
+    } else if (data.image || data.images) {
+      const img = data.image || (Array.isArray(data.images) ? data.images[0] : null)
+      if (img) await NXL.sendMessage(m.chat, { image: { url: img }, caption: data.title || '' }, { quoted: m })
+      else m.reply('❌ Media tidak ditemukan')
+    } else {
+      m.reply(`📥 *Download:*\n${JSON.stringify(data, null, 2).slice(0, 1000)}`)
+    }
+    await NXL.sendMessage(m.chat, { react: { text: "✅", key: m.key } })
+  } catch (e) {
+    await NXL.sendMessage(m.chat, { react: { text: "❌", key: m.key } })
+    m.reply(`❌ Gagal: ${e?.message || e}`)
+  }
+}
+break
+
+case 'mediafire': {
+  if (!text || !text.includes('mediafire.com')) return m.reply(`*Contoh:* .${command} https://www.mediafire.com/file/xxx`)
+  try {
+    await NXL.sendMessage(m.chat, { react: { text: "⏳", key: m.key } })
+    const { mediafire: mfDl } = require('./lib/media/scraper')
+    const res = await mfDl(text)
+    if (!res || !res.link) return m.reply('❌ Link tidak valid atau file tidak ditemukan')
+    await NXL.sendMessage(m.chat, { document: { url: res.link }, fileName: res.judul || 'file', mimetype: 'application/octet-stream', caption: `📁 *${res.judul || 'File'}*\n📐 ${res.size || '-'}` }, { quoted: m })
+    await NXL.sendMessage(m.chat, { react: { text: "✅", key: m.key } })
+  } catch (e) {
+    await NXL.sendMessage(m.chat, { react: { text: "❌", key: m.key } })
+    m.reply(`❌ Gagal: ${e?.message || e}`)
+  }
+}
+break
+
+case 'spotify':
+case 'spotifydl': {
+  if (!text) return m.reply(`*Contoh:* .${command} judul lagu / link spotify`)
+  try {
+    await NXL.sendMessage(m.chat, { react: { text: "🔎", key: m.key } })
+    const res = await axios.get(`https://api.siputzx.my.id/api/d/spotify?query=${encodeURIComponent(text)}`)
+    const data = res.data?.data || res.data?.result
+    if (!data || !data.url) return m.reply('❌ Lagu tidak ditemukan')
+    await NXL.sendMessage(m.chat, { audio: { url: data.url }, mimetype: 'audio/mpeg', contextInfo: { externalAdReply: { title: data.title || text, body: data.artist || 'Spotify', sourceUrl: data.link || '', mediaType: 1 } } }, { quoted: m })
+    await NXL.sendMessage(m.chat, { react: { text: "✅", key: m.key } })
+  } catch (e) {
+    await NXL.sendMessage(m.chat, { react: { text: "❌", key: m.key } })
+    m.reply(`❌ Gagal: ${e?.message || e}`)
+  }
+}
+break
+
+// [END BATCH 1]
+
 if (budy.startsWith('=>')) {
 if (!isCreator) return
 function Return(sul) {
